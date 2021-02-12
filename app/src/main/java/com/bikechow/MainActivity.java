@@ -7,7 +7,6 @@ import androidx.core.content.ContextCompat;
 
 import com.microsoft.maps.Geopoint;
 import com.microsoft.maps.MapAnimationKind;
-import com.microsoft.maps.MapDoubleTappedEventArgs;
 import com.microsoft.maps.MapElementLayer;
 import com.microsoft.maps.MapIcon;
 import com.microsoft.maps.MapRenderMode;
@@ -24,7 +23,6 @@ import android.location.Location;
 import android.location.LocationManager;
 
 import android.os.Bundle;
-import android.util.Log;
 import android.widget.FrameLayout;
 import android.widget.Toast;
 
@@ -41,29 +39,36 @@ public class MainActivity extends AppCompatActivity implements OnMapTappedListen
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
         mMapView = new MapView(this, MapRenderMode.VECTOR);  // or use MapRenderMode.RASTER for 2D map
-        mMapView.setCredentialsKey(BuildConfig.CREDENTIALS_KEY);
+        mMapView.setCredentialsKey(BuildConfig.CREDENTIALS_KEY);  //
         ((FrameLayout) findViewById(R.id.map_view)).addView(mMapView);
         mMapView.onCreate(savedInstanceState);
 
         getLocationPermissions();
 
-        mMapView.setScene(MapScene.createFromLocationAndRadius(startLocation, Data.DEFAULT_RADIUS_IN_METERS), MapAnimationKind.LINEAR);
+        mMapView.setScene(MapScene.createFromLocationAndRadius(startLocation, Data.DEFAULT_RADIUS_IN_METERS), MapAnimationKind.LINEAR); // Moves the camera to the specified position with the specified animation
 
-        mMapView.addOnMapTappedListener(this);
+        mMapView.addOnMapTappedListener(this); // Add an on tap listener (See the implements)
 
-        elementLayer = new MapElementLayer();
-        mMapView.getLayers().add(elementLayer);
-
-
+        elementLayer = new MapElementLayer(); // Create a layer for drawing icons  on (Do we need another one for drawing routes?)
+        mMapView.getLayers().add(elementLayer); // Add this layer to our map view
     }
-    
+
+    // Function for adding icons to map view with Icon Data (the preferred way)
+    private MapIcon addIcon(IconData iconData) {
+        MapIcon mapIcon = new MapIcon();
+        mapIcon.setLocation(iconData.location);
+        mapIcon.setImage(iconData.image);
+        mapIcon.setTitle(iconData.title);
+
+        elementLayer.getElements().add(mapIcon);
+
+        return mapIcon;
+    }
+
 
     @Override
     public boolean onMapTapped(MapTappedEventArgs mapTappedEventArgs) {
-        MapIcon icon = new MapIcon();
-        icon.setLocation(mapTappedEventArgs.location);
-        System.out.println("On map tapped detected");
-        elementLayer.getElements().add(icon);
+        addIcon(new IconData(mapTappedEventArgs.location));
 
         return true;
     }
@@ -75,12 +80,15 @@ public class MainActivity extends AppCompatActivity implements OnMapTappedListen
         locationManager = (LocationManager) this.getSystemService(Context.LOCATION_SERVICE);
 
         startLocation = getCurrentLocation() == null ? startLocation : getCurrentLocation();
-
     }
 
     @SuppressLint("MissingPermission")
     private Geopoint getCurrentLocation() {
         Geopoint geopoint = null;
+
+        if(!Data.locationPermsGranted) {
+            return null;
+        }
 
         Location l = locationManager.getLastKnownLocation(LocationManager.GPS_PROVIDER);
 
