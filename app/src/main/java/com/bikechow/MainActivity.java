@@ -69,6 +69,7 @@ public class MainActivity extends AppCompatActivity implements OnMapTappedListen
     }
 
     private void initUser(){
+        // getAssets().open() should open the assets folder and u can access a file through its name, but i wouldnt know because i cant add the map icon
         try{
             userData = new IconData(startLocation, "You", new MapImage(getAssets().open("mrchow.png")));
         } catch (IOException e) {
