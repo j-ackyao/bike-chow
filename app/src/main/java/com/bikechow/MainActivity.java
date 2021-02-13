@@ -55,12 +55,12 @@ public class MainActivity extends AppCompatActivity implements OnMapTappedListen
 
         mMapView.setScene(MapScene.createFromLocationAndRadius(startLocation, Data.DEFAULT_RADIUS_IN_METERS), MapAnimationKind.LINEAR); // Moves the camera to the specified position with the specified animation
 
-        initUser(); // Initiate user point
-
         mMapView.addOnMapTappedListener(this); // Add an on tap listener (See the implements)
 
         elementLayer = new MapElementLayer(); // Create a layer for drawing icons  on (Do we need another one for drawing routes?)
         mMapView.getLayers().add(elementLayer); // Add this layer to our map view
+        
+        initUser(); // Initiate user point
     }
 
     // This should make things neater or something
