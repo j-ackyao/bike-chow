@@ -21,6 +21,8 @@ class IconData {
     public String title = "";
     public Geopoint location;
 
+    public IconData(){ }
+
     public IconData(Geopoint location) {
         this.location = location;
     }
