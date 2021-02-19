@@ -9,6 +9,7 @@ import com.microsoft.maps.Geopoint;
 import com.microsoft.maps.MapAnimationKind;
 import com.microsoft.maps.MapElementLayer;
 import com.microsoft.maps.MapIcon;
+import com.microsoft.maps.MapImage;
 import com.microsoft.maps.MapRenderMode;
 import com.microsoft.maps.MapScene;
 import com.microsoft.maps.MapTappedEventArgs;
@@ -19,6 +20,8 @@ import android.Manifest;
 import android.annotation.SuppressLint;
 import android.content.Context;
 import android.content.pm.PackageManager;
+import android.graphics.Bitmap;
+import android.graphics.BitmapFactory;
 import android.location.Location;
 import android.location.LocationManager;
 
@@ -27,6 +30,8 @@ import android.util.Log;
 import android.widget.FrameLayout;
 import android.widget.Toast;
 
+import java.io.IOException;
+
 public class MainActivity extends AppCompatActivity implements OnMapTappedListener, ActivityCompat.OnRequestPermissionsResultCallback {
 
     private MapView mMapView;
@@ -34,8 +39,10 @@ public class MainActivity extends AppCompatActivity implements OnMapTappedListen
 
     private LocationManager locationManager;
     private Geopoint startLocation = Data.RICHMOND;
-
+    
     private Requests requestCreator;
+    private MapIcon user = new MapIcon();
+    private IconData userData = new IconData();
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -57,6 +64,23 @@ public class MainActivity extends AppCompatActivity implements OnMapTappedListen
 
         elementLayer = new MapElementLayer(); // Create a layer for drawing icons  on (Do we need another one for drawing routes?)
         mMapView.getLayers().add(elementLayer); // Add this layer to our map view
+        
+        initUser(); // Initiate user point
+    }
+
+    // This should make things neater or something
+    void alertUser(String text){
+        Toast.makeText(this, text, Toast.LENGTH_SHORT).show();
+    }
+
+    private void initUser(){
+        // getAssets().open() should open the assets folder and u can access a file through its name, but i wouldnt know because i cant add the map icon
+        try{
+            userData = new IconData(startLocation, "You", new MapImage(getAssets().open("mrchow.png")));
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+        addIcon(userData);
     }
 
     // Function for adding icons to map view with Icon Data (the preferred way)
