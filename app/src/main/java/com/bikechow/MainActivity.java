@@ -5,6 +5,8 @@ import androidx.appcompat.app.AppCompatActivity;
 import androidx.core.app.ActivityCompat;
 import androidx.core.content.ContextCompat;
 
+import com.android.volley.Request;
+import com.android.volley.VolleyError;
 import com.microsoft.maps.Geopoint;
 import com.microsoft.maps.MapAnimationKind;
 import com.microsoft.maps.MapElementLayer;
@@ -15,6 +17,7 @@ import com.microsoft.maps.MapScene;
 import com.microsoft.maps.MapTappedEventArgs;
 import com.microsoft.maps.MapView;
 import com.microsoft.maps.OnMapTappedListener;
+import com.microsoft.maps.search.MapLocationAddress;
 
 import android.Manifest;
 import android.annotation.SuppressLint;
@@ -39,7 +42,7 @@ public class MainActivity extends AppCompatActivity implements OnMapTappedListen
 
     private LocationManager locationManager;
     private Geopoint startLocation = Data.RICHMOND;
-    
+
     private Requests requestCreator;
     private MapIcon user = new MapIcon();
     private IconData userData = new IconData();
@@ -66,6 +69,12 @@ public class MainActivity extends AppCompatActivity implements OnMapTappedListen
         mMapView.getLayers().add(elementLayer); // Add this layer to our map view
         
         initUser(); // Initiate user point
+    }
+
+    @Override
+    protected void onStop() {
+        super.onStop();
+        requestCreator.clearRequests();
     }
 
     // This should make things neater or something
@@ -107,9 +116,11 @@ public class MainActivity extends AppCompatActivity implements OnMapTappedListen
     // When we have permissions to access locations
     @SuppressLint("MissingPermission")
     private void onLocationPermsAccepted() {
+        System.out.println("Entered location perms accepted condition");
+
         locationManager = (LocationManager) this.getSystemService(Context.LOCATION_SERVICE);
 
-        startLocation = getCurrentLocation() == null ? startLocation : getCurrentLocation();
+        startLocation = getCurrentLocation() ==null ? startLocation : getCurrentLocation();
     }
 
     // When the user rejects our request to access locations
