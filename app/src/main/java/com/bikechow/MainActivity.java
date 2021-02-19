@@ -23,6 +23,7 @@ import android.location.Location;
 import android.location.LocationManager;
 
 import android.os.Bundle;
+import android.util.Log;
 import android.widget.FrameLayout;
 import android.widget.Toast;
 
@@ -34,6 +35,8 @@ public class MainActivity extends AppCompatActivity implements OnMapTappedListen
     private LocationManager locationManager;
     private Geopoint startLocation = Data.RICHMOND;
 
+    private Requests requestCreator;
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -43,7 +46,10 @@ public class MainActivity extends AppCompatActivity implements OnMapTappedListen
         ((FrameLayout) findViewById(R.id.map_view)).addView(mMapView);
         mMapView.onCreate(savedInstanceState);
 
-        getLocationPermissions();
+        // Create our requests class, which will handle GET and POST requests
+        requestCreator = new Requests(this);
+
+        getLocationPermissions(); // Attempt to get our location permissions
 
         mMapView.setScene(MapScene.createFromLocationAndRadius(startLocation, Data.DEFAULT_RADIUS_IN_METERS), MapAnimationKind.LINEAR); // Moves the camera to the specified position with the specified animation
 
@@ -76,10 +82,15 @@ public class MainActivity extends AppCompatActivity implements OnMapTappedListen
 
     // When we have permissions to access locations
     @SuppressLint("MissingPermission")
-    private void onLocationPerms() {
+    private void onLocationPermsAccepted() {
         locationManager = (LocationManager) this.getSystemService(Context.LOCATION_SERVICE);
 
         startLocation = getCurrentLocation() == null ? startLocation : getCurrentLocation();
+    }
+
+    // When the user rejects our request to access locations
+    private void onLocationPermsDenied() {
+        Toast.makeText(this, "Some features will be disabled without location permissions.", Toast.LENGTH_SHORT).show();
     }
 
     @SuppressLint("MissingPermission")
@@ -111,7 +122,7 @@ public class MainActivity extends AppCompatActivity implements OnMapTappedListen
         if (!Data.locationPermsGranted) {
             ActivityCompat.requestPermissions(this, permissions, Data.LOCATION_PERMISSION_REQUEST_CODE);
         } else {
-            onLocationPerms();
+            onLocationPermsAccepted();
         }
     }
 
@@ -123,12 +134,12 @@ public class MainActivity extends AppCompatActivity implements OnMapTappedListen
         if (requestCode == Data.LOCATION_PERMISSION_REQUEST_CODE) {
             for (int grantResult : grantResults) {
                 if (grantResult == PackageManager.PERMISSION_DENIED) {
-                    Toast.makeText(this, "Some features will be disabled without location permissions.", Toast.LENGTH_SHORT).show();
+                    onLocationPermsDenied();
                     return;
                 }
 
                 Data.locationPermsGranted = true;
-                onLocationPerms();
+                onLocationPermsAccepted();
                 Toast.makeText(this, "Location permissions granted!", Toast.LENGTH_SHORT).show();
             }
         }
