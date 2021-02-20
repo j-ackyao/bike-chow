@@ -15,6 +15,12 @@ import com.microsoft.maps.MapScene;
 import com.microsoft.maps.MapTappedEventArgs;
 import com.microsoft.maps.MapView;
 import com.microsoft.maps.OnMapTappedListener;
+import com.microsoft.maps.search.MapLocation;
+import com.microsoft.maps.search.MapLocationAddress;
+import com.microsoft.maps.search.MapLocationFinder;
+import com.microsoft.maps.search.MapLocationFinderResult;
+import com.microsoft.maps.search.MapLocationFinderStatus;
+import com.microsoft.maps.search.OnMapLocationFinderResultListener;
 
 import android.Manifest;
 import android.annotation.SuppressLint;
@@ -31,6 +37,8 @@ import android.widget.FrameLayout;
 import android.widget.Toast;
 
 import java.io.IOException;
+import java.util.Arrays;
+import java.util.List;
 
 public class MainActivity extends AppCompatActivity implements OnMapTappedListener, ActivityCompat.OnRequestPermissionsResultCallback {
 
@@ -38,7 +46,9 @@ public class MainActivity extends AppCompatActivity implements OnMapTappedListen
     private MapElementLayer elementLayer;
 
     private LocationManager locationManager;
+    private MapLocationAddress mapLocationAddress;
     private Geopoint startLocation = Data.RICHMOND;
+
     
     private Requests requestCreator;
     private MapIcon user = new MapIcon();
@@ -64,11 +74,14 @@ public class MainActivity extends AppCompatActivity implements OnMapTappedListen
 
         elementLayer = new MapElementLayer(); // Create a layer for drawing icons  on (Do we need another one for drawing routes?)
         mMapView.getLayers().add(elementLayer); // Add this layer to our map view
-        
+
+
         initUser(); // Initiate user point
+
+        getAddress(getCurrentLocation());
     }
 
-    // This should make things neater or something
+    // this should make things neater or something
     void alertUser(String text){
         Toast.makeText(this, text, Toast.LENGTH_SHORT).show();
     }
@@ -80,7 +93,9 @@ public class MainActivity extends AppCompatActivity implements OnMapTappedListen
         } catch (IOException e) {
             e.printStackTrace();
         }
-        addIcon(userData);
+        if(startLocation != null){
+            addIcon(userData);
+        }
     }
 
     // Function for adding icons to map view with Icon Data (the preferred way)
@@ -95,7 +110,6 @@ public class MainActivity extends AppCompatActivity implements OnMapTappedListen
         return mapIcon;
     }
 
-
     @Override
     public boolean onMapTapped(MapTappedEventArgs mapTappedEventArgs) {
         addIcon(new IconData(mapTappedEventArgs.location));
@@ -103,12 +117,44 @@ public class MainActivity extends AppCompatActivity implements OnMapTappedListen
         return true;
     }
 
+    // gets the address from geopoint
+    public String getAddress(Geopoint geopoint) {
+        MapLocationFinder.findLocationsAt(geopoint, null, new OnMapLocationFinderResultListener() {
+            @Override
+            public void onMapLocationFinderResult(MapLocationFinderResult result) {
+                if(result.getStatus() == MapLocationFinderStatus.SUCCESS){
+                    List<MapLocation> mapLocationList = result.getLocations();
+                    // cant seem to get address from result
+                }
+                else{
+                    alertUser("failed");
+                }
+            }
+        });
+        return "";
+    }
+
+    // get geopoint from address string
+    public Geopoint getGeopoint(String address) {
+        MapLocationFinder.findLocations(address, null, new OnMapLocationFinderResultListener() {
+            @Override
+            public void onMapLocationFinderResult(MapLocationFinderResult result) {
+                if(result.getStatus() == MapLocationFinderStatus.SUCCESS){
+                    alertUser(result.getLocations().toString());
+                }
+                else{
+                    alertUser("failed");
+                }
+            }
+        });
+        return null;
+    }
+
 
     // When we have permissions to access locations
     @SuppressLint("MissingPermission")
     private void onLocationPermsAccepted() {
         locationManager = (LocationManager) this.getSystemService(Context.LOCATION_SERVICE);
-
         startLocation = getCurrentLocation() == null ? startLocation : getCurrentLocation();
     }
 
