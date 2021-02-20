@@ -4,6 +4,7 @@ import android.Manifest;
 import android.annotation.SuppressLint;
 import android.content.Context;
 import android.content.pm.PackageManager;
+import android.graphics.Color;
 import android.location.Location;
 import android.location.LocationManager;
 import android.os.Bundle;
@@ -15,30 +16,30 @@ import androidx.appcompat.app.AppCompatActivity;
 import androidx.core.app.ActivityCompat;
 import androidx.core.content.ContextCompat;
 
+import com.microsoft.maps.Geopath;
 import com.microsoft.maps.Geopoint;
+import com.microsoft.maps.Geoposition;
 import com.microsoft.maps.MapAnimationKind;
 import com.microsoft.maps.MapElementLayer;
 import com.microsoft.maps.MapIcon;
 import com.microsoft.maps.MapImage;
+import com.microsoft.maps.MapPolyline;
 import com.microsoft.maps.MapRenderMode;
 import com.microsoft.maps.MapScene;
-import com.microsoft.maps.MapTappedEventArgs;
 import com.microsoft.maps.MapView;
-import com.microsoft.maps.OnMapTappedListener;
-import com.microsoft.maps.search.MapLocation;
 import com.microsoft.maps.search.MapLocationAddress;
-import com.microsoft.maps.search.MapLocationFinder;
-import com.microsoft.maps.search.MapLocationFinderResult;
-import com.microsoft.maps.search.MapLocationFinderStatus;
-import com.microsoft.maps.search.OnMapLocationFinderResultListener;
+
+import org.json.JSONException;
 
 import java.io.IOException;
-import java.util.List;
+import java.util.ArrayList;
 
-public class MainActivity extends AppCompatActivity implements OnMapTappedListener, ActivityCompat.OnRequestPermissionsResultCallback {
+public class MainActivity extends AppCompatActivity implements ActivityCompat.OnRequestPermissionsResultCallback {
 
     private MapView mMapView;
-    private MapElementLayer elementLayer;
+    private MapElementLayer iconLayer;
+    private MapElementLayer routeLayer;
+
 
     private LocationManager locationManager;
     private MapLocationAddress mapLocationAddress;
@@ -64,10 +65,11 @@ public class MainActivity extends AppCompatActivity implements OnMapTappedListen
 
         mMapView.setScene(MapScene.createFromLocationAndRadius(startLocation, Data.DEFAULT_RADIUS_IN_METERS), MapAnimationKind.LINEAR); // Moves the camera to the specified position with the specified animation
 
-        mMapView.addOnMapTappedListener(this); // Add an on tap listener (See the implements)
-
-        elementLayer = new MapElementLayer(); // Create a layer for drawing icons  on (Do we need another one for drawing routes?)
-        mMapView.getLayers().add(elementLayer); // Add this layer to our map view
+        iconLayer = new MapElementLayer(); // Create a layer for drawing icons on
+        iconLayer.setZIndex(1); // We want the icons to be in front
+        routeLayer = new MapElementLayer();
+        mMapView.getLayers().add(routeLayer);
+        mMapView.getLayers().add(iconLayer); // Add these layer to our map view
 
         initUser(); // Initiate user point
     }
@@ -82,6 +84,23 @@ public class MainActivity extends AppCompatActivity implements OnMapTappedListen
     // this should make things neater or something
     void alertUser(String text){
         Toast.makeText(this, text, Toast.LENGTH_SHORT).show();
+    }
+
+    void drawRoute(Geopoint[] points) {
+        for(int i = 0; i < points.length; i++) {
+            if(i == points.length-1) return; // We don't want to draw a path for the final point
+
+            ArrayList<Geoposition> geopoints = new ArrayList<Geoposition>();
+            geopoints.add(points[i].getPosition());
+            geopoints.add(points[i+1].getPosition());
+
+            MapPolyline mapPolyline = new MapPolyline();
+            mapPolyline.setPath(new Geopath(geopoints));
+            mapPolyline.setStrokeWidth(Color.GREEN);
+            mapPolyline.setStrokeWidth(3);
+
+            routeLayer.getElements().add(mapPolyline);
+        }
     }
 
     private void initUser(){
@@ -103,49 +122,9 @@ public class MainActivity extends AppCompatActivity implements OnMapTappedListen
         mapIcon.setImage(iconData.image);
         mapIcon.setTitle(iconData.title);
 
-        elementLayer.getElements().add(mapIcon);
+        this.iconLayer.getElements().add(mapIcon);
 
         return mapIcon;
-    }
-
-    @Override
-    public boolean onMapTapped(MapTappedEventArgs mapTappedEventArgs) {
-        addIcon(new IconData(mapTappedEventArgs.location));
-
-        return true;
-    }
-
-    // gets the address from geopoint
-    public String getAddress(Geopoint geopoint) {
-        MapLocationFinder.findLocationsAt(geopoint, null, new OnMapLocationFinderResultListener() {
-            @Override
-            public void onMapLocationFinderResult(MapLocationFinderResult result) {
-                if(result.getStatus() == MapLocationFinderStatus.SUCCESS){
-                    List<MapLocation> mapLocationList = result.getLocations();
-                    // cant seem to get address from result
-                }
-                else{
-                    alertUser("failed");
-                }
-            }
-        });
-        return "";
-    }
-
-    // get geopoint from address string
-    public Geopoint getGeopoint(String address) {
-        MapLocationFinder.findLocations(address, null, new OnMapLocationFinderResultListener() {
-            @Override
-            public void onMapLocationFinderResult(MapLocationFinderResult result) {
-                if(result.getStatus() == MapLocationFinderStatus.SUCCESS){
-                    alertUser(result.getLocations().toString());
-                }
-                else{
-                    alertUser("failed");
-                }
-            }
-        });
-        return null;
     }
 
 
@@ -171,7 +150,7 @@ public class MainActivity extends AppCompatActivity implements OnMapTappedListen
             return null;
         }
 
-        Location l = locationManager.getLastKnownLocation(LocationManager.GPS_PROVIDER);
+        Location l = locationManager.getLastKnownLocation(LocationManager.NETWORK_PROVIDER);
 
         if(l != null) {
             geopoint = new Geopoint(l.getLatitude(), l.getLongitude());

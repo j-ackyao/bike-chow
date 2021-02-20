@@ -26,6 +26,7 @@ public class Data {
 
     // API URLs
     public static final String ROUTES_API = "https://dev.virtualearth.net/REST/v1/Routes?";
+    public static final String SNAP_API = "https://dev.virtualearth.net/REST/v1/Routes/SnapToRoad?";
 
 
     public static String geopointToString(Geopoint g) {

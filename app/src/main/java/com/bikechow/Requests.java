@@ -4,18 +4,19 @@ import android.widget.Toast;
 
 import com.android.volley.Request;
 import com.android.volley.RequestQueue;
-import com.android.volley.Response;
-import com.android.volley.VolleyError;
 import com.android.volley.toolbox.StringRequest;
 import com.android.volley.toolbox.Volley;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import com.microsoft.maps.Geopoint;
+import com.microsoft.maps.search.MapLocation;
+import com.microsoft.maps.search.MapLocationFinder;
+import com.microsoft.maps.search.MapLocationFinderStatus;
 
 import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
 
 import java.util.ArrayList;
+import java.util.List;
 
 public class Requests{
     MainActivity main;
@@ -45,6 +46,31 @@ public class Requests{
 
     public void clearRequests() {
         requestQueue.cancelAll(Data.REQUEST_TAG);
+    }
+
+    // gets the address from geopoint
+    public void getAddress(Geopoint geopoint, RequestCallback rcb) {
+        MapLocationFinder.findLocationsAt(geopoint, null, result -> {
+            if(result.getStatus() == MapLocationFinderStatus.SUCCESS){
+                List<MapLocation> mapLocationList = result.getLocations();
+                rcb.onCallback(mapLocationList.get(0).getAddress().getAddressLine());
+            }
+            else{
+                main.alertUser("Failed to find an address with a given set of coordinates");
+            }
+        });
+    }
+
+    // get geopoint from address string
+    public void getGeopoint(String address, GeopointCallback gcb) {
+        MapLocationFinder.findLocations(address, null, result -> {
+            if(result.getStatus() == MapLocationFinderStatus.SUCCESS){
+                gcb.onCallback(result.getLocations().get(0).getGeocodePoints().get(0).getPoint());
+            }
+            else{
+                main.alertUser("Failed to find a set of coordinates with a given address");
+            }
+        });
     }
 
     public void getRoutesData(String[] waypoints, int amountOfRoutes, RequestCallback rcb) {
@@ -84,9 +110,36 @@ public class Requests{
         return retData.toArray(new Geopoint[0]);
     }
 
+    public void getSnappedData(Geopoint[] unsnappedPoints, RequestCallback rcb) {
+        StringBuilder url = new StringBuilder(Data.SNAP_API + "points=");
+        for(Geopoint p : unsnappedPoints) {
+            url.append(String.format("%s;", Data.geopointToString(p)));
+        }
+        url.deleteCharAt(url.length()-1);
+        url.append(String.format("&interpolate=true&key=%s", BuildConfig.CREDENTIALS_KEY));
+        getRequest(url.toString(), rcb);
+    }
+
+    public Geopoint[] getSnappedPoints(String data) throws JSONException {
+        JSONArray snappedPoints = new JSONObject(data).getJSONArray("resourceSets").getJSONObject(0).getJSONArray("resources").getJSONObject(0).getJSONArray("snappedPoints");
+        ArrayList<Geopoint> retData = new ArrayList<Geopoint>();
+        for(int i = 0; i < snappedPoints.length(); i++) {
+            JSONObject coordinates = snappedPoints.getJSONObject(i).getJSONObject("coordinate");
+            double latitude = coordinates.getDouble("latitude");
+            double longitude = coordinates.getDouble("longitude");
+
+            retData.add(new Geopoint(latitude, longitude));
+        }
+        return retData.toArray(new Geopoint[0]);
+    }
+
 }
 
 interface RequestCallback {
     void onCallback(String data);
+}
+
+interface GeopointCallback {
+    void onCallback(Geopoint point);
 }
 
