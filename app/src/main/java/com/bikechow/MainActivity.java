@@ -51,11 +51,16 @@ public class MainActivity extends AppCompatActivity implements OnMapTappedListen
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        setContentView(R.layout.activity_main);
+        setContentView(R.layout.activity_naviation_drawer);
         mMapView = new MapView(this, MapRenderMode.VECTOR);  // or use MapRenderMode.RASTER for 2D map
         mMapView.setCredentialsKey(BuildConfig.CREDENTIALS_KEY);  //
         ((FrameLayout) findViewById(R.id.map_view)).addView(mMapView);
         mMapView.onCreate(savedInstanceState);
+
+        // disable the ugly buttons
+        mMapView.getUserInterfaceOptions().setZoomButtonsVisible(false);
+        mMapView.getUserInterfaceOptions().setCompassButtonVisible(false);
+        mMapView.getUserInterfaceOptions().setTiltButtonVisible(false);
 
         // Create our requests class, which will handle GET and POST requests
         requestCreator = new Requests(this);
@@ -171,7 +176,7 @@ public class MainActivity extends AppCompatActivity implements OnMapTappedListen
             return null;
         }
 
-        Location l = locationManager.getLastKnownLocation(LocationManager.GPS_PROVIDER);
+        Location l = locationManager.getLastKnownLocation(LocationManager.NETWORK_PROVIDER);
 
         if(l != null) {
             geopoint = new Geopoint(l.getLatitude(), l.getLongitude());
