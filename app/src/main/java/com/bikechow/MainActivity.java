@@ -1,49 +1,39 @@
 package com.bikechow;
 
+import android.Manifest;
+import android.annotation.SuppressLint;
+import android.content.Context;
+import android.content.pm.PackageManager;
+import android.location.Location;
+import android.location.LocationManager;
+import android.os.Bundle;
+import android.widget.FrameLayout;
+import android.widget.Toast;
+
 import androidx.annotation.NonNull;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.core.app.ActivityCompat;
 import androidx.core.content.ContextCompat;
 
-import com.android.volley.Request;
-import com.android.volley.VolleyError;
-import com.microsoft.maps.Geopath;
 import com.microsoft.maps.Geopoint;
-import com.microsoft.maps.Geoposition;
 import com.microsoft.maps.MapAnimationKind;
 import com.microsoft.maps.MapElementLayer;
 import com.microsoft.maps.MapIcon;
 import com.microsoft.maps.MapImage;
-import com.microsoft.maps.MapPolyline;
 import com.microsoft.maps.MapRenderMode;
 import com.microsoft.maps.MapScene;
 import com.microsoft.maps.MapTappedEventArgs;
 import com.microsoft.maps.MapView;
 import com.microsoft.maps.OnMapTappedListener;
+import com.microsoft.maps.search.MapLocation;
 import com.microsoft.maps.search.MapLocationAddress;
-
-import android.Manifest;
-import android.annotation.SuppressLint;
-import android.content.Context;
-import android.content.pm.PackageManager;
-import android.graphics.Bitmap;
-import android.graphics.BitmapFactory;
-import android.graphics.Color;
-import android.location.Location;
-import android.location.LocationManager;
-
-import android.os.Bundle;
-import android.util.Log;
-import android.widget.FrameLayout;
-import android.widget.Toast;
-
-import org.json.JSONArray;
-import org.json.JSONException;
-import org.json.JSONObject;
+import com.microsoft.maps.search.MapLocationFinder;
+import com.microsoft.maps.search.MapLocationFinderResult;
+import com.microsoft.maps.search.MapLocationFinderStatus;
+import com.microsoft.maps.search.OnMapLocationFinderResultListener;
 
 import java.io.IOException;
-import java.util.ArrayList;
-import java.util.Arrays;
+import java.util.List;
 
 public class MainActivity extends AppCompatActivity implements OnMapTappedListener, ActivityCompat.OnRequestPermissionsResultCallback {
 
@@ -51,6 +41,7 @@ public class MainActivity extends AppCompatActivity implements OnMapTappedListen
     private MapElementLayer elementLayer;
 
     private LocationManager locationManager;
+    private MapLocationAddress mapLocationAddress;
     private Geopoint startLocation = Data.RICHMOND;
 
     private Requests requestCreator;
@@ -79,15 +70,6 @@ public class MainActivity extends AppCompatActivity implements OnMapTappedListen
         mMapView.getLayers().add(elementLayer); // Add this layer to our map view
 
         initUser(); // Initiate user point
-
-        requestCreator.getRoutesData(new String[]{Data.geopointToString(Data.RICHMOND), "Vancouver"}, 3, data -> {
-            try {
-                JSONArray j = requestCreator.getRouteLegs(requestCreator.getRouteJSON(data));
-                Geopoint[] points = requestCreator.getRoutePoints(j, 0);
-            } catch (JSONException e) {
-                e.printStackTrace();
-            }
-        });
     }
 
 
@@ -97,7 +79,7 @@ public class MainActivity extends AppCompatActivity implements OnMapTappedListen
         requestCreator.clearRequests();
     }
 
-    // This should make things neater or something
+    // this should make things neater or something
     void alertUser(String text){
         Toast.makeText(this, text, Toast.LENGTH_SHORT).show();
     }
@@ -109,7 +91,9 @@ public class MainActivity extends AppCompatActivity implements OnMapTappedListen
         } catch (IOException e) {
             e.printStackTrace();
         }
-        addIcon(userData);
+        if(startLocation != null){
+            addIcon(userData);
+        }
     }
 
     // Function for adding icons to map view with Icon Data (the preferred way)
@@ -124,12 +108,44 @@ public class MainActivity extends AppCompatActivity implements OnMapTappedListen
         return mapIcon;
     }
 
-
     @Override
     public boolean onMapTapped(MapTappedEventArgs mapTappedEventArgs) {
         addIcon(new IconData(mapTappedEventArgs.location));
 
         return true;
+    }
+
+    // gets the address from geopoint
+    public String getAddress(Geopoint geopoint) {
+        MapLocationFinder.findLocationsAt(geopoint, null, new OnMapLocationFinderResultListener() {
+            @Override
+            public void onMapLocationFinderResult(MapLocationFinderResult result) {
+                if(result.getStatus() == MapLocationFinderStatus.SUCCESS){
+                    List<MapLocation> mapLocationList = result.getLocations();
+                    // cant seem to get address from result
+                }
+                else{
+                    alertUser("failed");
+                }
+            }
+        });
+        return "";
+    }
+
+    // get geopoint from address string
+    public Geopoint getGeopoint(String address) {
+        MapLocationFinder.findLocations(address, null, new OnMapLocationFinderResultListener() {
+            @Override
+            public void onMapLocationFinderResult(MapLocationFinderResult result) {
+                if(result.getStatus() == MapLocationFinderStatus.SUCCESS){
+                    alertUser(result.getLocations().toString());
+                }
+                else{
+                    alertUser("failed");
+                }
+            }
+        });
+        return null;
     }
 
 
@@ -139,8 +155,7 @@ public class MainActivity extends AppCompatActivity implements OnMapTappedListen
         System.out.println("Entered location perms accepted condition");
 
         locationManager = (LocationManager) this.getSystemService(Context.LOCATION_SERVICE);
-
-        startLocation = getCurrentLocation() ==null ? startLocation : getCurrentLocation();
+        startLocation = getCurrentLocation() == null ? startLocation : getCurrentLocation();
     }
 
     // When the user rejects our request to access locations
