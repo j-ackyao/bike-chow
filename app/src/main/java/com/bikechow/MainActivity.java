@@ -7,11 +7,14 @@ import androidx.core.content.ContextCompat;
 
 import com.android.volley.Request;
 import com.android.volley.VolleyError;
+import com.microsoft.maps.Geopath;
 import com.microsoft.maps.Geopoint;
+import com.microsoft.maps.Geoposition;
 import com.microsoft.maps.MapAnimationKind;
 import com.microsoft.maps.MapElementLayer;
 import com.microsoft.maps.MapIcon;
 import com.microsoft.maps.MapImage;
+import com.microsoft.maps.MapPolyline;
 import com.microsoft.maps.MapRenderMode;
 import com.microsoft.maps.MapScene;
 import com.microsoft.maps.MapTappedEventArgs;
@@ -25,6 +28,7 @@ import android.content.Context;
 import android.content.pm.PackageManager;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
+import android.graphics.Color;
 import android.location.Location;
 import android.location.LocationManager;
 
@@ -33,7 +37,13 @@ import android.util.Log;
 import android.widget.FrameLayout;
 import android.widget.Toast;
 
+import org.json.JSONArray;
+import org.json.JSONException;
+import org.json.JSONObject;
+
 import java.io.IOException;
+import java.util.ArrayList;
+import java.util.Arrays;
 
 public class MainActivity extends AppCompatActivity implements OnMapTappedListener, ActivityCompat.OnRequestPermissionsResultCallback {
 
@@ -67,9 +77,19 @@ public class MainActivity extends AppCompatActivity implements OnMapTappedListen
 
         elementLayer = new MapElementLayer(); // Create a layer for drawing icons  on (Do we need another one for drawing routes?)
         mMapView.getLayers().add(elementLayer); // Add this layer to our map view
-        
+
         initUser(); // Initiate user point
+
+        requestCreator.getRoutesData(new String[]{Data.geopointToString(Data.RICHMOND), "Vancouver"}, 3, data -> {
+            try {
+                JSONArray j = requestCreator.getRouteLegs(requestCreator.getRouteJSON(data));
+                Geopoint[] points = requestCreator.getRoutePoints(j, 0);
+            } catch (JSONException e) {
+                e.printStackTrace();
+            }
+        });
     }
+
 
     @Override
     protected void onStop() {

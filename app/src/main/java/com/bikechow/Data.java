@@ -2,8 +2,11 @@ package com.bikechow;
 
 import android.Manifest;
 
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.microsoft.maps.Geopoint;
 import com.microsoft.maps.MapImage;
+
+import java.util.ArrayList;
 
 public class Data {
     // Permission related statics
@@ -23,6 +26,11 @@ public class Data {
 
     // API URLs
     public static final String ROUTES_API = "https://dev.virtualearth.net/REST/v1/Routes?";
+
+
+    public static String geopointToString(Geopoint g) {
+        return String.format("%s,%s", g.getPosition().getLatitude(), g.getPosition().getLongitude());
+    }
 
 }
 
@@ -54,3 +62,4 @@ class IconData {
         this.image = image;
     }
 }
+
