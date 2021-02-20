@@ -5,6 +5,8 @@ import androidx.appcompat.app.AppCompatActivity;
 import androidx.core.app.ActivityCompat;
 import androidx.core.content.ContextCompat;
 
+import com.android.volley.Request;
+import com.android.volley.VolleyError;
 import com.microsoft.maps.Geopoint;
 import com.microsoft.maps.MapAnimationKind;
 import com.microsoft.maps.MapElementLayer;
@@ -15,6 +17,7 @@ import com.microsoft.maps.MapScene;
 import com.microsoft.maps.MapTappedEventArgs;
 import com.microsoft.maps.MapView;
 import com.microsoft.maps.OnMapTappedListener;
+
 import com.microsoft.maps.search.MapLocation;
 import com.microsoft.maps.search.MapLocationAddress;
 import com.microsoft.maps.search.MapLocationFinder;
@@ -49,7 +52,6 @@ public class MainActivity extends AppCompatActivity implements OnMapTappedListen
     private MapLocationAddress mapLocationAddress;
     private Geopoint startLocation = Data.RICHMOND;
 
-    
     private Requests requestCreator;
     private MapIcon user = new MapIcon();
     private IconData userData = new IconData();
@@ -79,6 +81,12 @@ public class MainActivity extends AppCompatActivity implements OnMapTappedListen
         initUser(); // Initiate user point
 
         getAddress(getCurrentLocation());
+    }
+
+    @Override
+    protected void onStop() {
+        super.onStop();
+        requestCreator.clearRequests();
     }
 
     // this should make things neater or something
@@ -154,6 +162,8 @@ public class MainActivity extends AppCompatActivity implements OnMapTappedListen
     // When we have permissions to access locations
     @SuppressLint("MissingPermission")
     private void onLocationPermsAccepted() {
+        System.out.println("Entered location perms accepted condition");
+
         locationManager = (LocationManager) this.getSystemService(Context.LOCATION_SERVICE);
         startLocation = getCurrentLocation() == null ? startLocation : getCurrentLocation();
     }
