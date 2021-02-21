@@ -91,7 +91,7 @@ public class MainActivity extends AppCompatActivity implements ActivityCompat.On
         Toast.makeText(this, text, Toast.LENGTH_SHORT).show();
     }
 
-    void drawRoute(Geopoint[] points) {
+    void drawRoute(Geopoint[] points, int color) {
         for(int i = 0; i < points.length; i++) {
             if(i == points.length-1) return; // We don't want to draw a path for the final point
 
@@ -101,8 +101,9 @@ public class MainActivity extends AppCompatActivity implements ActivityCompat.On
 
             MapPolyline mapPolyline = new MapPolyline();
             mapPolyline.setPath(new Geopath(geopoints));
-            mapPolyline.setStrokeWidth(Color.GREEN);
+            mapPolyline.setStrokeColor(color);
             mapPolyline.setStrokeWidth(3);
+            mapPolyline.setStrokeDashed(false);
 
             routeLayer.getElements().add(mapPolyline);
         }
