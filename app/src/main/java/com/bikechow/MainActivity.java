@@ -8,6 +8,7 @@ import android.graphics.Color;
 import android.location.Location;
 import android.location.LocationManager;
 import android.os.Bundle;
+import android.view.Window;
 import android.widget.FrameLayout;
 import android.widget.Toast;
 
@@ -28,8 +29,6 @@ import com.microsoft.maps.MapRenderMode;
 import com.microsoft.maps.MapScene;
 import com.microsoft.maps.MapView;
 import com.microsoft.maps.search.MapLocationAddress;
-
-import org.json.JSONException;
 
 import java.io.IOException;
 import java.util.ArrayList;
@@ -52,7 +51,7 @@ public class MainActivity extends AppCompatActivity implements ActivityCompat.On
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        setContentView(R.layout.activity_naviation_drawer);
+        setContentView(R.layout.activity_main);
         mMapView = new MapView(this, MapRenderMode.VECTOR);  // or use MapRenderMode.RASTER for 2D map
         mMapView.setCredentialsKey(BuildConfig.CREDENTIALS_KEY);  //
         ((FrameLayout) findViewById(R.id.map_view)).addView(mMapView);
