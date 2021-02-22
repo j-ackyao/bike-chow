@@ -64,3 +64,16 @@ class IconData {
     }
 }
 
+// Stores data about a route
+class Route {
+    public Geopoint[] points;
+    public Geopoint startingPoint;
+    public Geopoint endingPoint;
+
+    public Route(Geopoint[] points) {
+        this.points = points;
+        startingPoint = points[0];
+        startingPoint = points[points.length-1];
+    }
+}
+

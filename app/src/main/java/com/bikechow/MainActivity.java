@@ -30,21 +30,23 @@ import com.microsoft.maps.MapScene;
 import com.microsoft.maps.MapView;
 import com.microsoft.maps.search.MapLocationAddress;
 
+import org.json.JSONException;
+
 import java.io.IOException;
 import java.util.ArrayList;
 
-public class MainActivity extends AppCompatActivity implements ActivityCompat.OnRequestPermissionsResultCallback {
+public class MainActivity extends AppCompatActivity implements ActivityCompat.OnRequestPermissionsResultCallback{
 
-    private MapView mMapView;
-    private MapElementLayer iconLayer;
-    private MapElementLayer routeLayer;
+    public MapView mMapView;
 
 
     private LocationManager locationManager;
     private MapLocationAddress mapLocationAddress;
     private Geopoint startLocation = Data.RICHMOND;
 
-    private Requests requestCreator;
+    public Requests requestCreator;
+    private Draw draw;
+
     private MapIcon user = new MapIcon();
     private IconData userData = new IconData();
 
@@ -65,15 +67,12 @@ public class MainActivity extends AppCompatActivity implements ActivityCompat.On
         // Create our requests class, which will handle GET and POST requests
         requestCreator = new Requests(this);
 
+        // Create our draw class, which will enable us to draw onto the map
+        draw = new Draw(this);
+
         getLocationPermissions(); // Attempt to get our location permissions
 
         mMapView.setScene(MapScene.createFromLocationAndRadius(startLocation, Data.DEFAULT_RADIUS_IN_METERS), MapAnimationKind.LINEAR); // Moves the camera to the specified position with the specified animation
-
-        iconLayer = new MapElementLayer(); // Create a layer for drawing icons on
-        iconLayer.setZIndex(1); // We want the icons to be in front
-        routeLayer = new MapElementLayer();
-        mMapView.getLayers().add(routeLayer);
-        mMapView.getLayers().add(iconLayer); // Add these layer to our map view
 
         initUser(); // Initiate user point
     }
@@ -90,24 +89,6 @@ public class MainActivity extends AppCompatActivity implements ActivityCompat.On
         Toast.makeText(this, text, Toast.LENGTH_SHORT).show();
     }
 
-    void drawRoute(Geopoint[] points, int color) {
-        for(int i = 0; i < points.length; i++) {
-            if(i == points.length-1) return; // We don't want to draw a path for the final point
-
-            ArrayList<Geoposition> geopoints = new ArrayList<Geoposition>();
-            geopoints.add(points[i].getPosition());
-            geopoints.add(points[i+1].getPosition());
-
-            MapPolyline mapPolyline = new MapPolyline();
-            mapPolyline.setPath(new Geopath(geopoints));
-            mapPolyline.setStrokeColor(color);
-            mapPolyline.setStrokeWidth(3);
-            mapPolyline.setStrokeDashed(false);
-
-            routeLayer.getElements().add(mapPolyline);
-        }
-    }
-
     private void initUser(){
         // getAssets().open() should open the assets folder and u can access a file through its name, but i wouldnt know because i cant add the map icon
         try{
@@ -116,20 +97,8 @@ public class MainActivity extends AppCompatActivity implements ActivityCompat.On
             e.printStackTrace();
         }
         if(startLocation != null){
-            addIcon(userData);
+            draw.addIcon(userData);
         }
-    }
-
-    // Function for adding icons to map view with Icon Data (the preferred way)
-    private MapIcon addIcon(IconData iconData) {
-        MapIcon mapIcon = new MapIcon();
-        mapIcon.setLocation(iconData.location);
-        mapIcon.setImage(iconData.image);
-        mapIcon.setTitle(iconData.title);
-
-        this.iconLayer.getElements().add(mapIcon);
-
-        return mapIcon;
     }
 
 
