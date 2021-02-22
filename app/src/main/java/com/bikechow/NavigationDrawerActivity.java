@@ -50,7 +50,7 @@ public class NavigationDrawerActivity extends AppCompatActivity { // this is aut
     @Override
     public boolean onCreateOptionsMenu(Menu menu) {
         // Inflate the menu; this adds items to the action bar if it is present.
-        getMenuInflater().inflate(R.menu.navigation_drawer, menu);
+        getMenuInflater().inflate(R.menu.main_content, menu);
         return true;
     }
 

@@ -15,7 +15,7 @@
         android:theme="@style/Theme.BikeChow">
         <activity
             android:name=".NavigationDrawerActivity"
-            android:label="@string/title_activity_naviation_drawer"
+            android:label="@string/title_activity_navigation_drawer"
             android:theme="@style/Theme.BikeChow.NoActionBar"></activity>
         <activity android:name=".MainActivity"
             android:theme="@style/Theme.BikeChow.NoActionBar">
