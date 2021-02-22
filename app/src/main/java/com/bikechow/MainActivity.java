@@ -4,14 +4,11 @@ import android.Manifest;
 import android.annotation.SuppressLint;
 import android.content.Context;
 import android.content.pm.PackageManager;
-import android.graphics.Color;
 import android.location.Location;
 import android.location.LocationManager;
 import android.os.Bundle;
 import android.view.MenuItem;
 import android.view.View;
-import android.view.Window;
-import android.widget.Button;
 import android.widget.FrameLayout;
 import android.widget.Toast;
 import android.widget.Toolbar;
@@ -24,25 +21,19 @@ import androidx.core.view.GravityCompat;
 import androidx.drawerlayout.widget.DrawerLayout;
 
 import com.google.android.material.navigation.NavigationView;
-import com.microsoft.maps.Geopath;
 import com.microsoft.maps.Geopoint;
-import com.microsoft.maps.Geoposition;
 import com.microsoft.maps.MapAnimationKind;
-import com.microsoft.maps.MapElementLayer;
 import com.microsoft.maps.MapIcon;
 import com.microsoft.maps.MapImage;
-import com.microsoft.maps.MapPolyline;
 import com.microsoft.maps.MapRenderMode;
 import com.microsoft.maps.MapScene;
 import com.microsoft.maps.MapView;
 import com.microsoft.maps.search.MapLocationAddress;
 
-import org.json.JSONException;
-
 import java.io.IOException;
-import java.util.ArrayList;
+import java.util.Map;
 
-public class MainActivity extends AppCompatActivity implements ActivityCompat.OnRequestPermissionsResultCallback, NavigationView.OnNavigationItemSelectedListener {
+public class MainActivity extends AppCompatActivity implements ActivityCompat.OnRequestPermissionsResultCallback {
     public MapView mMapView;
 
     private DrawerLayout drawerLayout;
@@ -68,7 +59,7 @@ public class MainActivity extends AppCompatActivity implements ActivityCompat.On
         ((FrameLayout) findViewById(R.id.map_view)).addView(mMapView);
         mMapView.onCreate(savedInstanceState);
 
-        // initialize our visual stuff
+        // initialize our visuals
         initView();
 
         // Create our requests class, which will handle GET and POST requests
@@ -79,7 +70,8 @@ public class MainActivity extends AppCompatActivity implements ActivityCompat.On
 
         getLocationPermissions(); // Attempt to get our location permissions
 
-        mMapView.setScene(MapScene.createFromLocationAndRadius(startLocation, Data.DEFAULT_RADIUS_IN_METERS), MapAnimationKind.LINEAR); // Moves the camera to the specified position with the specified animation
+        // found it kinda annoying each time i booted the app it takes a second for me to find my own location, so i made this no transition
+        setScene(startLocation, Data.DEFAULT_FAR_RADIUS, MapAnimationKind.NONE);
 
         initUser(); // Initiate user point
     }
@@ -90,6 +82,17 @@ public class MainActivity extends AppCompatActivity implements ActivityCompat.On
         navigationView = findViewById(R.id.nav_view);
         //toolbar = findViewById(R.id.toolbar);
 
+        // add listener to our navigation drawer to detect item selected
+        navigationView.setNavigationItemSelectedListener(navigationListener);
+
+        // add listener to our floating button to return view to user
+        findViewById(R.id.userPosReturn).setOnClickListener(new View.OnClickListener(){
+            @Override
+            public void onClick(View v) {
+                setScene(getCurrentLocation(), Data.DEFAULT_CLOSE_RADIUS, MapAnimationKind.BOW);
+            }
+        });
+
         // disable the ugly buttons
         mMapView.getUserInterfaceOptions().setZoomButtonsVisible(false);
         mMapView.getUserInterfaceOptions().setCompassButtonVisible(false);
@@ -98,21 +101,32 @@ public class MainActivity extends AppCompatActivity implements ActivityCompat.On
     }
 
     // do whatever when an item on navigation drawer is pressed
-    // note: for some reason neither of these work
-    @Override
-    public boolean onNavigationItemSelected(@NonNull MenuItem item) {
-        // Handle navigation view item clicks here.
-        switch (item.getItemId()) {
+    // when returned true, selected item would be highlighted and not highlighted if returned false
+    // we will use this navigation drawer to handle out different "pages"
+    NavigationView.OnNavigationItemSelectedListener navigationListener = new NavigationView.OnNavigationItemSelectedListener() {
 
-            case R.id.directions: {
-                //do somthing
-                break;
+        @Override
+        public boolean onNavigationItemSelected(MenuItem item) {
+
+            switch (item.getItemId()) {
+                case R.id.map:
+
+                    // close navigation drawer
+                    drawerLayout.closeDrawer(GravityCompat.START);
+                    return true;
+
+                case R.id.directions:
+
+                    return true;
+
+                case R.id.blank:
+                    alertUser("work in progress");
+
             }
+
+            return false;
         }
-        //close navigation drawer
-        drawerLayout.closeDrawer(GravityCompat.START);
-        return true;
-    }
+    };
 
     @Override
     public boolean onOptionsItemSelected(MenuItem item){
@@ -148,6 +162,11 @@ public class MainActivity extends AppCompatActivity implements ActivityCompat.On
         }
     }
 
+    // set view (moved to its own function for accessibility)
+    private void setScene(Geopoint location, int radius, MapAnimationKind transition){
+        mMapView.setScene(MapScene.createFromLocationAndRadius(location, radius), transition);
+        // Moves the camera to the specified position with the specified animation
+    }
 
     // When we have permissions to access locations
     @SuppressLint("MissingPermission")
@@ -210,7 +229,7 @@ public class MainActivity extends AppCompatActivity implements ActivityCompat.On
 
                 Data.locationPermsGranted = true;
                 onLocationPermsAccepted();
-                Toast.makeText(this, "Location permissions granted!", Toast.LENGTH_SHORT).show();
+               alertUser("Location permissions granted!");
             }
         }
     }

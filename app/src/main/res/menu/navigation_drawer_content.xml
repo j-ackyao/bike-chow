@@ -5,16 +5,16 @@
 
     <group android:checkableBehavior="single">
         <item
-            android:id="@+id/directions"
+            android:id="@+id/map"
             android:icon="@drawable/ic_baseline_location_searching_24"
+            android:title="Map" />
+        <item
+            android:id="@+id/directions"
+            android:icon="@drawable/ic_menu_send"
             android:title="Directions" />
         <item
             android:id="@+id/blank"
-            android:icon="@drawable/ic_menu_send"
-            android:title="blank" />
-        <item
-            android:id="@+id/blank2"
             android:icon="@drawable/ic_menu_slideshow"
-            android:title="blank2" />
+            android:title="blank" />
     </group>
 </menu>

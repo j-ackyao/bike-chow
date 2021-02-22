@@ -16,7 +16,8 @@ public class Data {
     public static boolean locationPermsGranted = false; // Bool to check if we have perms
 
     // Navigation
-    public static final int DEFAULT_RADIUS_IN_METERS = 1500; // Zoom amount to default to
+    public static final int DEFAULT_FAR_RADIUS = 1500; // Zoom amount to default to // changed this to far radius because its kinda far
+    public static final int DEFAULT_CLOSE_RADIUS = 300; // this is a better view for user to view their surroundings
 
     // Request handling
     public static final String REQUEST_TAG = "REQ"; // All requests are tagged with this
