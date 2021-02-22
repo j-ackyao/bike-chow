@@ -8,15 +8,22 @@ import android.graphics.Color;
 import android.location.Location;
 import android.location.LocationManager;
 import android.os.Bundle;
+import android.view.MenuItem;
+import android.view.View;
 import android.view.Window;
+import android.widget.Button;
 import android.widget.FrameLayout;
 import android.widget.Toast;
+import android.widget.Toolbar;
 
 import androidx.annotation.NonNull;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.core.app.ActivityCompat;
 import androidx.core.content.ContextCompat;
+import androidx.core.view.GravityCompat;
+import androidx.drawerlayout.widget.DrawerLayout;
 
+import com.google.android.material.navigation.NavigationView;
 import com.microsoft.maps.Geopath;
 import com.microsoft.maps.Geopoint;
 import com.microsoft.maps.Geoposition;
@@ -35,10 +42,12 @@ import org.json.JSONException;
 import java.io.IOException;
 import java.util.ArrayList;
 
-public class MainActivity extends AppCompatActivity implements ActivityCompat.OnRequestPermissionsResultCallback{
-
+public class MainActivity extends AppCompatActivity implements ActivityCompat.OnRequestPermissionsResultCallback, NavigationView.OnNavigationItemSelectedListener {
     public MapView mMapView;
 
+    private DrawerLayout drawerLayout;
+    private NavigationView navigationView;
+    private Toolbar toolbar;
 
     private LocationManager locationManager;
     private MapLocationAddress mapLocationAddress;
@@ -59,10 +68,8 @@ public class MainActivity extends AppCompatActivity implements ActivityCompat.On
         ((FrameLayout) findViewById(R.id.map_view)).addView(mMapView);
         mMapView.onCreate(savedInstanceState);
 
-        // disable the ugly buttons
-        mMapView.getUserInterfaceOptions().setZoomButtonsVisible(false);
-        mMapView.getUserInterfaceOptions().setCompassButtonVisible(false);
-        mMapView.getUserInterfaceOptions().setTiltButtonVisible(false);
+        // initialize our visual stuff
+        initView();
 
         // Create our requests class, which will handle GET and POST requests
         requestCreator = new Requests(this);
@@ -77,6 +84,46 @@ public class MainActivity extends AppCompatActivity implements ActivityCompat.On
         initUser(); // Initiate user point
     }
 
+    private void initView() {
+
+        drawerLayout = findViewById(R.id.drawer_layout);
+        navigationView = findViewById(R.id.nav_view);
+        //toolbar = findViewById(R.id.toolbar);
+
+        // disable the ugly buttons
+        mMapView.getUserInterfaceOptions().setZoomButtonsVisible(false);
+        mMapView.getUserInterfaceOptions().setCompassButtonVisible(false);
+        mMapView.getUserInterfaceOptions().setTiltButtonVisible(false);
+
+    }
+
+    // do whatever when an item on navigation drawer is pressed
+    // note: for some reason neither of these work
+    @Override
+    public boolean onNavigationItemSelected(@NonNull MenuItem item) {
+        // Handle navigation view item clicks here.
+        switch (item.getItemId()) {
+
+            case R.id.directions: {
+                //do somthing
+                break;
+            }
+        }
+        //close navigation drawer
+        drawerLayout.closeDrawer(GravityCompat.START);
+        return true;
+    }
+
+    @Override
+    public boolean onOptionsItemSelected(MenuItem item){
+        switch(item.getItemId()){
+            case R.id.directions:
+                alertUser("gdfdfgfdg");
+                System.out.println("dfgdfgsdfg");
+                return true;
+        }
+        return super.onOptionsItemSelected(item);
+    }
 
     @Override
     protected void onStop() {
@@ -113,7 +160,7 @@ public class MainActivity extends AppCompatActivity implements ActivityCompat.On
 
     // When the user rejects our request to access locations
     private void onLocationPermsDenied() {
-        Toast.makeText(this, "Some features will be disabled without location permissions.", Toast.LENGTH_SHORT).show();
+        alertUser("Some features will be disabled without location permissions.");
     }
 
     @SuppressLint("MissingPermission")
