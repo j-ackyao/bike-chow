@@ -95,6 +95,7 @@ public class MainActivity extends AppCompatActivity implements ActivityCompat.On
         findViewById(R.id.userPosReturn).setOnClickListener(new View.OnClickListener(){
             @Override
             public void onClick(View v) {
+                updateUser();
                 setScene(getCurrentLocation(), Data.DEFAULT_CLOSE_RADIUS, MapAnimationKind.BOW);
             }
         });
@@ -166,6 +167,11 @@ public class MainActivity extends AppCompatActivity implements ActivityCompat.On
         if(startLocation != null){
             draw.addIcon(userData);
         }
+    }
+
+    // more to add here (hopefully)
+    private void updateUser() {
+        userData.location = getCurrentLocation();
     }
 
     // set view (moved to its own function for accessibility)
