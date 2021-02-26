@@ -1,7 +1,5 @@
 package com.bikechow;
 
-import android.widget.Toast;
-
 import com.android.volley.Request;
 import com.android.volley.RequestQueue;
 import com.android.volley.toolbox.StringRequest;
@@ -16,6 +14,7 @@ import org.json.JSONException;
 import org.json.JSONObject;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 
 public class Requests{
@@ -37,7 +36,7 @@ public class Requests{
 
     public void sendRequest(String url, RequestCallback rcb, int requestMethod) {
         StringRequest req = new StringRequest(requestMethod, url, rcb::onCallback, error -> {
-            Toast.makeText(main, "An internal error occurred attempting to make a request.", Toast.LENGTH_LONG).show();
+            main.alertUser("An internal error occurred attempting make a request.");
             System.out.println("Request Error::::: "+error.toString());
         });
         req.setTag(Data.REQUEST_TAG);
@@ -85,8 +84,12 @@ public class Requests{
                     retData.add(route);
 
                 } catch (JSONException e) {
-                    e.printStackTrace();
+                    // We likely failed to generate the amount of routes, or another problem occured.
                 }
+            }
+
+            if(retData.size() < amountOfRoutes) {
+                main.alertUser("Failed to generate amount of routes requested. Found: " + retData.size() + ", wanted: " + amountOfRoutes);
             }
 
             rcb.onCallback(retData);
@@ -132,9 +135,14 @@ public class Requests{
         int skipped = 0;
         int curIndex = 5;
         int nextIndex = 6;
-        double minDiff = 0.0001;
+        double minDiff = 0.00001;
         double maxDiff = 0.1;
         int maxSkip = 10;
+
+        if(rawData.size() < curIndex) {
+            retData = (ArrayList<Geopoint>)rawData.clone();
+            return retData.toArray(new Geopoint[0]);
+        }
 
         for(int i = 0; i < curIndex; i++) {
             retData.add(rawData.get(i));
@@ -149,7 +157,7 @@ public class Requests{
             Geopoint cur = rawData.get(curIndex);
             Geopoint next = rawData.get(nextIndex);
 
-            double latDiff = Math.abs(next.getPosition().getLatitude() - cur.getPosition().getLatitude());
+            double latDiff = Math.abs(next.getPosition().getLatitude() - cur.getPosition().getLatitude()) ;
             double longDiff = Math.abs(next.getPosition().getLongitude() - cur.getPosition().getLongitude());
 
             if(((latDiff < minDiff && longDiff < maxDiff) || (longDiff < minDiff && latDiff < maxDiff)) && nextIndex-curIndex < maxSkip) {
@@ -168,15 +176,15 @@ public class Requests{
     }
 
 
-
-
     private void b_getRoutesData(String[] waypoints, int amountOfRoutes, RequestCallback rcb) {
         StringBuilder concat = new StringBuilder(Data.ROUTES_API); // Initialize the string with the routes beginning
         for(int i = 0; i < waypoints.length; i++) { // Add on each waypoint
             if(i >= 25) {return;} // We don't want to exceed 25 waypoints
             concat.append(String.format("wp.%s=%s&", i + 1, waypoints[i])); // Add each waypoint as: wp.1=Vancouver&
         }
-        concat.append(String.format("maxSolutions=%s&travelMode=%s&key=%s", amountOfRoutes, "Walking",BuildConfig.CREDENTIALS_KEY)); // Append on the amount of routes and our key
+//        concat.append(String.format("travelMode=%s&avoid=%s&maxSolutions=%s&key=%s", "Walking", "highways",amountOfRoutes ,BuildConfig.CREDENTIALS_KEY)); // Append on the amount of routes and our key
+        concat.append(String.format("maxSolutions=%s&travelMode=%s&key=%s", amountOfRoutes, "Walking", BuildConfig.CREDENTIALS_KEY)); // Append on the amount of routes and our key
+
         getRequest(concat.toString(), rcb);
     }
 
@@ -186,9 +194,8 @@ public class Requests{
 
     private JSONObject b_getRouteResources(JSONObject routeJSON, int routeIndex) throws JSONException {
         JSONObject resourceSets = routeJSON.getJSONArray("resourceSets").getJSONObject(0);
-        JSONObject resources = resourceSets.getJSONArray("resources").getJSONObject(routeIndex);
 
-        return resources;
+        return resourceSets.getJSONArray("resources").getJSONObject(routeIndex);
     }
 
     private Geopoint[] b_getRoutePoints(JSONObject resources) throws JSONException {
@@ -208,6 +215,50 @@ public class Requests{
         return retData.toArray(new Geopoint[0]);
     }
 
+    private void b_getElevationData(Geopoint startPoint, Geopoint endPoint, RequestCallback rcb) {
+        getRequest(Data.ELEVATION_API + "points=" + Data.geopointToString(startPoint) + "," + Data.geopointToString(endPoint) + "&key=" + BuildConfig.CREDENTIALS_KEY, rcb);
+    }
+
+    private int[] b_getElevations(String elevationData) throws JSONException {
+        JSONObject elevationJSON = new JSONObject(elevationData);
+
+        JSONArray arr = elevationJSON.getJSONArray("resourceSets").getJSONObject(0).getJSONArray("resources").getJSONObject(0).getJSONArray("elevations");
+        return new int[] {(int)arr.get(0), (int)arr.get(1)};
+    }
+
+    private boolean b_isIntArrFilled(int[][] arr) {
+        for (int[] ints : arr) {
+            if (Arrays.equals(ints, new int[]{0, 0})) {
+                return false;
+            }
+        }
+        return true;
+    }
+
+    public void getElevations(Route route, ElevationsCallback ecb) {
+        int length = route.points.length;
+        ArrayList<int[]> retData = new ArrayList<int[]>(length-1);
+        int[][] rawData = new int[length-1][2];
+
+        for(int i = 0; i < length-1; i++) {
+            int a = i;
+            b_getElevationData(route.points[i], route.points[i+1], unparsed -> {
+                try {
+                    int[] data = b_getElevations(unparsed);
+                    rawData[a] = data;
+
+                    if(b_isIntArrFilled(rawData))  {
+                        retData.addAll(Arrays.asList(rawData));
+                        ecb.onCallback(retData);
+                    }
+
+                } catch (JSONException e) {
+                    e.printStackTrace();
+                }
+            });
+        }
+    }
+
 }
 
 interface RequestCallback {
@@ -220,4 +271,8 @@ interface GeopointCallback {
 
 interface RoutesCallback {
     void onCallback(ArrayList<Route> routes);
+}
+
+interface ElevationsCallback {
+    void onCallback(ArrayList<int[]> elevations);
 }

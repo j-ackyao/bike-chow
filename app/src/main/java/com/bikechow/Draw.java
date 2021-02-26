@@ -48,7 +48,7 @@ public class Draw {
     // Function for drawing routes, given points
     public void drawRoute(Geopoint[] points, int color) {
         for(int i = 0; i < points.length; i++) {
-            if(i == points.length-1) return; // We don't want to draw a path for the final point
+            if(i == points.length-1) break; // We don't want to draw a path for the final point
 
             ArrayList<Geoposition> geopoints = new ArrayList<Geoposition>();
             geopoints.add(points[i].getPosition());
@@ -57,11 +57,14 @@ public class Draw {
             MapPolyline mapPolyline = new MapPolyline();
             mapPolyline.setPath(new Geopath(geopoints));
             mapPolyline.setStrokeColor(color);
-            mapPolyline.setStrokeWidth(3);
+            mapPolyline.setStrokeWidth(5);
             mapPolyline.setStrokeDashed(false);
 
             routeLayer.getElements().add(mapPolyline);
         }
+
+        // Add a point at the last position
+        addIcon(new IconData(points[points.length-1]));
     }
 
 

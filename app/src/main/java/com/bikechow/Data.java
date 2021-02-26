@@ -1,6 +1,7 @@
 package com.bikechow;
 
 import android.Manifest;
+import android.graphics.Color;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.microsoft.maps.Geopoint;
@@ -24,10 +25,15 @@ public class Data {
 
     // Location constants
     public static final Geopoint RICHMOND = new Geopoint(49.166592, -123.133568);
+    public static final Geopoint VANCOUVER = new Geopoint(49.246292, -123.116226);
 
     // API URLs
     public static final String ROUTES_API = "https://dev.virtualearth.net/REST/v1/Routes?";
     public static final String SNAP_API = "https://dev.virtualearth.net/REST/v1/Routes/SnapToRoad?";
+    public static final String ELEVATION_API = "https://dev.virtualearth.net/REST/v1/Elevation/List?";
+
+    // Colour sequence
+    public static final int[] COLOR_SEQUENCE = new int[] {Color.GREEN, Color.BLUE, Color.RED, Color.YELLOW, Color.CYAN};
 
 
     public static String geopointToString(Geopoint g) {

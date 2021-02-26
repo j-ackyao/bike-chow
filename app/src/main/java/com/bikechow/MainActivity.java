@@ -4,6 +4,7 @@ import android.Manifest;
 import android.annotation.SuppressLint;
 import android.content.Context;
 import android.content.pm.PackageManager;
+import android.graphics.Color;
 import android.location.Location;
 import android.location.LocationManager;
 import android.os.Bundle;
@@ -27,10 +28,15 @@ import com.microsoft.maps.MapIcon;
 import com.microsoft.maps.MapImage;
 import com.microsoft.maps.MapRenderMode;
 import com.microsoft.maps.MapScene;
+import com.microsoft.maps.MapTappedEventArgs;
 import com.microsoft.maps.MapView;
+import com.microsoft.maps.OnMapTappedListener;
 import com.microsoft.maps.search.MapLocationAddress;
 
+import org.json.JSONException;
+
 import java.io.IOException;
+import java.util.Arrays;
 import java.util.Map;
 
 public class MainActivity extends AppCompatActivity implements ActivityCompat.OnRequestPermissionsResultCallback {
@@ -233,4 +239,5 @@ public class MainActivity extends AppCompatActivity implements ActivityCompat.On
             }
         }
     }
+
 }
