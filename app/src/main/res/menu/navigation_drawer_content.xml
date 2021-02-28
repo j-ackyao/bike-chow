@@ -5,16 +5,23 @@
 
     <group android:checkableBehavior="single">
         <item
-            android:id="@+id/map"
+            android:id="@+id/nav_map"
             android:icon="@drawable/ic_baseline_location_searching_24"
             android:title="Map" />
         <item
-            android:id="@+id/directions"
+            android:id="@+id/nav_directions"
             android:icon="@drawable/ic_menu_send"
             android:title="Directions" />
         <item
-            android:id="@+id/blank"
+            android:id="@+id/nav_blank"
             android:icon="@drawable/ic_menu_slideshow"
             android:title="blank" />
+    </group>
+
+    <group android:checkableBehavior="single">
+        <item
+            android:id="@+id/nav_settings"
+            android:icon="@drawable/ic_baseline_settings_24"
+            android:title="Settings"/>
     </group>
 </menu>

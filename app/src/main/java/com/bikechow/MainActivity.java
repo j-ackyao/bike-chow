@@ -4,10 +4,11 @@ import android.Manifest;
 import android.annotation.SuppressLint;
 import android.content.Context;
 import android.content.pm.PackageManager;
-import android.graphics.Color;
 import android.location.Location;
 import android.location.LocationManager;
+import android.os.Build;
 import android.os.Bundle;
+import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
 import android.widget.FrameLayout;
@@ -15,6 +16,7 @@ import android.widget.Toast;
 import android.widget.Toolbar;
 
 import androidx.annotation.NonNull;
+import androidx.annotation.RequiresApi;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.core.app.ActivityCompat;
 import androidx.core.content.ContextCompat;
@@ -28,22 +30,17 @@ import com.microsoft.maps.MapIcon;
 import com.microsoft.maps.MapImage;
 import com.microsoft.maps.MapRenderMode;
 import com.microsoft.maps.MapScene;
-import com.microsoft.maps.MapTappedEventArgs;
 import com.microsoft.maps.MapView;
-import com.microsoft.maps.OnMapTappedListener;
 import com.microsoft.maps.search.MapLocationAddress;
 
-import org.json.JSONException;
-
 import java.io.IOException;
-import java.util.Arrays;
-import java.util.Map;
 
 public class MainActivity extends AppCompatActivity implements ActivityCompat.OnRequestPermissionsResultCallback {
     public MapView mMapView;
 
     private DrawerLayout drawerLayout;
     private NavigationView navigationView;
+    private Menu navigationMenu;
     private Toolbar toolbar;
 
     private LocationManager locationManager;
@@ -53,7 +50,6 @@ public class MainActivity extends AppCompatActivity implements ActivityCompat.On
     public Requests requestCreator;
     private Draw draw;
 
-    private MapIcon user = new MapIcon();
     private IconData userData = new IconData();
 
     @Override
@@ -76,9 +72,6 @@ public class MainActivity extends AppCompatActivity implements ActivityCompat.On
 
         getLocationPermissions(); // Attempt to get our location permissions
 
-        // found it kinda annoying each time i booted the app it takes a second for me to find my own location, so i made this no transition
-        setScene(startLocation, Data.DEFAULT_FAR_RADIUS, MapAnimationKind.NONE);
-
         initUser(); // Initiate user point
     }
 
@@ -86,10 +79,19 @@ public class MainActivity extends AppCompatActivity implements ActivityCompat.On
 
         drawerLayout = findViewById(R.id.drawer_layout);
         navigationView = findViewById(R.id.nav_view);
-        //toolbar = findViewById(R.id.toolbar);
+        navigationMenu = navigationView.getMenu();
+        toolbar = findViewById(R.id.toolbar);
 
         // add listener to our navigation drawer to detect item selected
         navigationView.setNavigationItemSelectedListener(navigationListener);
+
+        // add listener to toolbar icon to open navigation drawer
+        toolbar.setNavigationOnClickListener(new View.OnClickListener(){
+            @Override
+            public void onClick(View v) {
+                drawerLayout.openDrawer(GravityCompat.START);
+            }
+        });
 
         // add listener to our floating button to return view to user
         findViewById(R.id.userPosReturn).setOnClickListener(new View.OnClickListener(){
@@ -100,10 +102,15 @@ public class MainActivity extends AppCompatActivity implements ActivityCompat.On
             }
         });
 
+        // maps in navigation drawer enabled on default
+        // does not work
+        //navigationMenu.getItem(R.id.nav_map).setChecked(true);
+
         // disable the ugly buttons
         mMapView.getUserInterfaceOptions().setZoomButtonsVisible(false);
         mMapView.getUserInterfaceOptions().setCompassButtonVisible(false);
         mMapView.getUserInterfaceOptions().setTiltButtonVisible(false);
+
 
     }
 
@@ -116,17 +123,17 @@ public class MainActivity extends AppCompatActivity implements ActivityCompat.On
         public boolean onNavigationItemSelected(MenuItem item) {
 
             switch (item.getItemId()) {
-                case R.id.map:
+                case R.id.nav_map:
 
                     // close navigation drawer
                     drawerLayout.closeDrawer(GravityCompat.START);
                     return true;
 
-                case R.id.directions:
+                case R.id.nav_directions:
 
                     return true;
 
-                case R.id.blank:
+                case R.id.nav_blank:
                     alertUser("work in progress");
 
             }
@@ -134,17 +141,6 @@ public class MainActivity extends AppCompatActivity implements ActivityCompat.On
             return false;
         }
     };
-
-    @Override
-    public boolean onOptionsItemSelected(MenuItem item){
-        switch(item.getItemId()){
-            case R.id.directions:
-                alertUser("gdfdfgfdg");
-                System.out.println("dfgdfgsdfg");
-                return true;
-        }
-        return super.onOptionsItemSelected(item);
-    }
 
     @Override
     protected void onStop() {
@@ -161,6 +157,8 @@ public class MainActivity extends AppCompatActivity implements ActivityCompat.On
         // getAssets().open() should open the assets folder and u can access a file through its name, but i wouldnt know because i cant add the map icon
         try{
             userData = new IconData(startLocation, "You", new MapImage(getAssets().open("mrchow.png")));
+            // found it kinda annoying each time i booted the app it takes a second for me to find my own location, so i made this no transition
+            setScene(startLocation, Data.DEFAULT_FAR_RADIUS, MapAnimationKind.NONE);
         } catch (IOException e) {
             e.printStackTrace();
         }
