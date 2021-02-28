@@ -142,12 +142,6 @@ public class MainActivity extends AppCompatActivity implements ActivityCompat.On
         }
     };
 
-    @Override
-    protected void onStop() {
-        super.onStop();
-        requestCreator.clearRequests();
-    }
-
     // this should make things neater or something
     void alertUser(String text){
         Toast.makeText(this, text, Toast.LENGTH_SHORT).show();
