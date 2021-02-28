@@ -8,6 +8,7 @@ import com.microsoft.maps.Geopoint;
 import com.microsoft.maps.MapImage;
 
 import java.util.ArrayList;
+import java.util.Collections;
 
 public class Data {
     // Permission related statics
@@ -33,7 +34,7 @@ public class Data {
     public static final String ELEVATION_API = "https://dev.virtualearth.net/REST/v1/Elevation/List?";
 
     // Colour sequence
-    public static final int[] COLOR_SEQUENCE = new int[] {Color.GREEN, Color.BLUE, Color.RED, Color.YELLOW, Color.CYAN};
+    public static final int[] COLOR_SEQUENCE = new int[] {Color.rgb(0, 255, 0),Color.rgb(0, 155, 0), Color.rgb(0, 100, 0)};
 
 
     public static String geopointToString(Geopoint g) {

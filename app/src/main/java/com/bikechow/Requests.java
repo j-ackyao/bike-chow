@@ -15,6 +15,7 @@ import org.json.JSONObject;
 
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
 
 public class Requests{
@@ -255,6 +256,66 @@ public class Requests{
                 } catch (JSONException e) {
                     e.printStackTrace();
                 }
+            });
+        }
+    }
+
+    private int b_indexOf(int[] arr, int x) {
+        for(int i = 0; i < arr.length; i++) {
+            if (x == arr[i]) {
+                return i;
+            }
+        }
+
+        throw new java.lang.Error("COULD NOT FIND NUMBER IN ARRAY");
+    }
+
+    public  void sortRoutesByElevationCost(ArrayList<Route> routes, RoutesCallback rcb) {
+        if(routes.size() < 2) {
+            rcb.onCallback(routes);
+            return;
+        }
+
+        int[] elevationCosts = new int[routes.size()];
+
+        for(int i = 0; i < routes.size(); i++) {
+            int a = i;
+            main.requestCreator.getElevations(routes.get(i), ecb -> {
+                int maxDiff = 0;
+                for(int j = 0; j < ecb.size(); j++) {
+                    int[] data = ecb.get(j);
+                    int calcDiff = data[1] - data[0];
+                    maxDiff = Math.abs(calcDiff) > maxDiff ? calcDiff : maxDiff;
+                }
+                elevationCosts[a] = (maxDiff);
+
+                boolean allFilled = false;
+
+                for (int elevationCost : elevationCosts) {
+                    if (elevationCost == 0) {
+                        allFilled = false;
+                        break;
+                    }
+                    allFilled = true;
+                }
+
+                if(allFilled) {
+                    int[] copy = elevationCosts.clone();
+                    Route[] retRoutes = new Route[routes.size()];
+                    Arrays.sort(copy);
+
+                    for(int l = 0; l < elevationCosts.length; l++) {
+                        int placement = b_indexOf(copy, elevationCosts[l]);
+                        retRoutes[placement] = routes.get(l);
+                    }
+
+                    for(int m = 0; m < retRoutes.length; m++) {
+                        System.out.println(String.format("Route index: %s, Elevation cost: %s", m, copy[m]));
+                    }
+
+                    rcb.onCallback(new ArrayList<Route>(Arrays.asList(retRoutes)));
+                }
+
             });
         }
     }
