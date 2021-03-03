@@ -3,6 +3,7 @@ package com.bikechow;
 import com.microsoft.maps.Geopath;
 import com.microsoft.maps.Geopoint;
 import com.microsoft.maps.Geoposition;
+import com.microsoft.maps.MapElement;
 import com.microsoft.maps.MapElementLayer;
 import com.microsoft.maps.MapIcon;
 import com.microsoft.maps.MapPolyline;
@@ -17,6 +18,10 @@ public class Draw {
     private final MapElementLayer iconLayer;
     private final MapElementLayer routeLayer;
     private final Requests requestCreator;
+    private MapIcon tapIcon = null;
+    private MapIcon userIcon = null;
+
+    private final ArrayList<Route> storedRoutes = new ArrayList<Route>();
 
     public Draw(MainActivity main) {
         this.main = main;
@@ -31,6 +36,23 @@ public class Draw {
     // Function for drawing routes, given a route object
     public void drawRoute(Route route, int color) {
         drawRoute(route.points, color);
+
+        // Add a point in the middle of the route
+        Geopoint middlePoint = route.points[route.points.length/2];
+        String iconText = "";
+
+//        System.out.println(String.format("Route Elevation Cost: %s", route.getElevationCost()));
+
+        if(route.getElevationCost() != -1) {
+            iconText = String.format("Elevation Cost: %s", route.getElevationCost()).toString();
+        }
+
+//        System.out.println("Entered Draw Route with a given route. Elevation cost is: " + route.elevationCost);
+
+        route.iconIndex = addIcon(new IconData(middlePoint, iconText));
+
+        storedRoutes.add(route);
+
     }
 
     // Function for drawing a route cleanly, give a route object
@@ -38,7 +60,9 @@ public class Draw {
         requestCreator.getSnappedData(route.points, json -> {
             try {
                 Geopoint[] points = requestCreator.getSnappedPoints(json);
-                drawRoute(points, color);
+                Route r = new Route(points);
+                r.setElevationCost(route.getElevationCost());
+                drawRoute(r, color);
             } catch (JSONException e) {
                 e.printStackTrace();
             }
@@ -62,9 +86,6 @@ public class Draw {
 
             routeLayer.getElements().add(mapPolyline);
         }
-
-        // Add a point at the last position
-        addIcon(new IconData(points[points.length-1]));
     }
 
 
@@ -77,7 +98,31 @@ public class Draw {
         mapIcon.setTitle(iconData.title);
 
         this.iconLayer.getElements().add(mapIcon);
-
         return mapIcon;
     }
+
+    public void replaceTapPoint(Geopoint newPoint, String address) {
+        if(tapIcon != null) {
+            iconLayer.getElements().remove(tapIcon);
+        }
+
+        tapIcon = addIcon(new IconData(newPoint, address));
+    }
+
+    public void replaceUserPoint(Geopoint newPoint) {
+        iconLayer.getElements().remove(userIcon);
+        main.userData = new IconData(newPoint, "You");
+        userIcon = addIcon(main.userData);
+    }
+
+    public void clearRoutes() {
+        routeLayer.getElements().clear();
+
+        for(int i = 0; i < storedRoutes.size(); i++) {
+            iconLayer.getElements().remove(storedRoutes.get(i).iconIndex);
+        }
+
+        storedRoutes.clear();
+    }
+
 }

@@ -8,6 +8,7 @@ import com.microsoft.maps.Geopoint;
 import com.microsoft.maps.search.MapLocation;
 import com.microsoft.maps.search.MapLocationFinder;
 import com.microsoft.maps.search.MapLocationFinderStatus;
+import com.microsoft.maps.search.MapLocationOptions;
 
 import org.json.JSONArray;
 import org.json.JSONException;
@@ -15,8 +16,8 @@ import org.json.JSONObject;
 
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Collections;
 import java.util.List;
+import java.util.concurrent.atomic.AtomicInteger;
 
 public class Requests{
     MainActivity main;
@@ -50,7 +51,9 @@ public class Requests{
 
     // gets the address from geopoint
     public void getAddress(Geopoint geopoint, RequestCallback rcb) {
-        MapLocationFinder.findLocationsAt(geopoint, null, result -> {
+        MapLocationOptions options = new MapLocationOptions();
+        options.setIncludeCountryCode(true);
+        MapLocationFinder.findLocationsAt(geopoint, options, result -> {
             if(result.getStatus() == MapLocationFinderStatus.SUCCESS){
                 List<MapLocation> mapLocationList = result.getLocations();
                 rcb.onCallback(mapLocationList.get(0).getAddress().getAddressLine());
@@ -63,6 +66,7 @@ public class Requests{
 
     // get geopoint from address string
     public void getGeopoint(String address, GeopointCallback gcb) {
+        address += ", BC"; // This is a fallback measure. It may be removed in the future.
         MapLocationFinder.findLocations(address, null, result -> {
             if(result.getStatus() == MapLocationFinderStatus.SUCCESS){
                 gcb.onCallback(result.getLocations().get(0).getGeocodePoints().get(0).getPoint());
@@ -270,50 +274,33 @@ public class Requests{
         throw new java.lang.Error("COULD NOT FIND NUMBER IN ARRAY");
     }
 
-    public  void sortRoutesByElevationCost(ArrayList<Route> routes, RoutesCallback rcb) {
-        if(routes.size() < 2) {
-            rcb.onCallback(routes);
-            return;
-        }
+    public void setRouteElevation(Route r, Callback finished) { // Assign the route elevation of a route
+        getElevations(r, elevations -> {
+            int maximum = 0;
+            for(int i = 0; i < elevations.size(); i++) {
+                int[] intArray = elevations.get(i);
+                int change = Math.abs(intArray[1] - intArray[0]);
 
-        int[] elevationCosts = new int[routes.size()];
-
-        for(int i = 0; i < routes.size(); i++) {
-            int a = i;
-            main.requestCreator.getElevations(routes.get(i), ecb -> {
-                int maxDiff = 0;
-                for(int j = 0; j < ecb.size(); j++) {
-                    int[] data = ecb.get(j);
-                    int calcDiff = data[1] - data[0];
-                    maxDiff = Math.abs(calcDiff) > maxDiff ? calcDiff : maxDiff;
+                if(maximum < change) {
+                    maximum = change;
                 }
-                elevationCosts[a] = (maxDiff);
+            }
+            r.setElevationCost(maximum);
+            finished.onCallback();
+        });
+    }
 
-                boolean allFilled = false;
+    public void sortRoutesByElevationCost(ArrayList<Route> routes, RoutesCallback rcb) { // Sort an arraylist of routes
+        AtomicInteger sorted = new AtomicInteger();
 
-                for (int elevationCost : elevationCosts) {
-                    if (elevationCost == 0) {
-                        allFilled = false;
-                        break;
-                    }
-                    allFilled = true;
-                }
+        for(Route route : routes) {
+            setRouteElevation(route, () -> {
+                sorted.getAndIncrement();
 
-                if(allFilled) {
-                    int[] copy = elevationCosts.clone();
-                    Route[] retRoutes = new Route[routes.size()];
-                    Arrays.sort(copy);
+                if(sorted.get() == routes.size()) {
+                    routes.sort((o1, o2) -> o1.getElevationCost() - o2.getElevationCost());
 
-                    for(int l = 0; l < elevationCosts.length; l++) {
-                        int placement = b_indexOf(copy, elevationCosts[l]);
-                        retRoutes[placement] = routes.get(l);
-                    }
-
-                    for(int m = 0; m < retRoutes.length; m++) {
-                        System.out.println(String.format("Route index: %s, Elevation cost: %s", m, copy[m]));
-                    }
-
-                    rcb.onCallback(new ArrayList<Route>(Arrays.asList(retRoutes)));
+                    rcb.onCallback(routes);
                 }
 
             });
@@ -336,4 +323,8 @@ interface RoutesCallback {
 
 interface ElevationsCallback {
     void onCallback(ArrayList<int[]> elevations);
+}
+
+interface Callback {
+    void onCallback();
 }

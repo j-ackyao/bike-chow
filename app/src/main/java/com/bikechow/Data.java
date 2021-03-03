@@ -3,12 +3,9 @@ package com.bikechow;
 import android.Manifest;
 import android.graphics.Color;
 
-import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.microsoft.maps.Geopoint;
+import com.microsoft.maps.MapIcon;
 import com.microsoft.maps.MapImage;
-
-import java.util.ArrayList;
-import java.util.Collections;
 
 public class Data {
     // Permission related statics
@@ -77,6 +74,18 @@ class Route {
     public Geopoint[] points;
     public Geopoint startingPoint;
     public Geopoint endingPoint;
+    public MapIcon iconIndex = null;
+
+    public int elevationCost = -1;
+    public int changeValue = 0;
+
+    public int getElevationCost() {
+        return elevationCost;
+    }
+
+    public void setElevationCost(int elevationCost) {
+        this.elevationCost = elevationCost;
+    }
 
     public Route(Geopoint[] points) {
         this.points = points;
@@ -84,4 +93,3 @@ class Route {
         startingPoint = points[points.length-1];
     }
 }
-

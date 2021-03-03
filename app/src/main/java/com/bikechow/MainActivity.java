@@ -39,7 +39,7 @@ import java.io.IOException;
 import java.util.Arrays;
 import java.util.Map;
 
-public class MainActivity extends AppCompatActivity implements ActivityCompat.OnRequestPermissionsResultCallback {
+public class MainActivity extends AppCompatActivity implements ActivityCompat.OnRequestPermissionsResultCallback, OnMapTappedListener {
     public MapView mMapView;
 
     private DrawerLayout drawerLayout;
@@ -53,8 +53,8 @@ public class MainActivity extends AppCompatActivity implements ActivityCompat.On
     public Requests requestCreator;
     private Draw draw;
 
-    private MapIcon user = new MapIcon();
-    private IconData userData = new IconData();
+    public IconData userData = new IconData();
+
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -68,6 +68,9 @@ public class MainActivity extends AppCompatActivity implements ActivityCompat.On
         // initialize our visuals
         initView();
 
+        // Add our map tapped listener
+        mMapView.addOnMapTappedListener(this);
+
         // Create our requests class, which will handle GET and POST requests
         requestCreator = new Requests(this);
 
@@ -79,7 +82,6 @@ public class MainActivity extends AppCompatActivity implements ActivityCompat.On
         // found it kinda annoying each time i booted the app it takes a second for me to find my own location, so i made this no transition
         setScene(startLocation, Data.DEFAULT_FAR_RADIUS, MapAnimationKind.NONE);
 
-        initUser(); // Initiate user point
     }
 
     private void initView() {
@@ -181,6 +183,8 @@ public class MainActivity extends AppCompatActivity implements ActivityCompat.On
 
         locationManager = (LocationManager) this.getSystemService(Context.LOCATION_SERVICE);
         startLocation = getCurrentLocation() == null ? startLocation : getCurrentLocation();
+
+        initUser(); // Initiate user point
     }
 
     // When the user rejects our request to access locations
@@ -190,10 +194,10 @@ public class MainActivity extends AppCompatActivity implements ActivityCompat.On
 
     @SuppressLint("MissingPermission")
     private Geopoint getCurrentLocation() {
-        Geopoint geopoint = null;
+        Geopoint geopoint = startLocation;
 
         if(!Data.locationPermsGranted) {
-            return null;
+            return geopoint;
         }
 
         Location l = locationManager.getLastKnownLocation(LocationManager.NETWORK_PROVIDER);
@@ -240,4 +244,31 @@ public class MainActivity extends AppCompatActivity implements ActivityCompat.On
         }
     }
 
+    /* When the user taps on the screen, we want a point to be generated with the address of the location.
+       Further implementation will include that it will append the location automatically to the text box for
+       destination.
+       We return false as we may still want other listeners to receive the event. */
+    @Override
+    public boolean onMapTapped(MapTappedEventArgs mapTappedEventArgs) {
+        Geopoint tapPoint = mapTappedEventArgs.location;
+        requestCreator.getAddress(tapPoint, request -> {
+            draw.replaceTapPoint(tapPoint, request);
+        });
+
+        draw.clearRoutes();
+
+        try {
+            requestCreator.getRoutesPoints(startLocation, tapPoint, 3, routes -> {
+                requestCreator.sortRoutesByElevationCost(routes, sortedRoutes -> {
+                    for(int i = 0; i < sortedRoutes.size(); i++) {
+                        draw.drawRouteInterpolated(sortedRoutes.get(i), Data.COLOR_SEQUENCE[i]);
+                    }
+                });
+
+            });
+        } catch (JSONException e) {
+            e.printStackTrace();
+        }
+        return false;
+    }
 }
