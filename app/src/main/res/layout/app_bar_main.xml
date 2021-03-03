@@ -17,7 +17,16 @@
             android:layout_height="?attr/actionBarSize"
             android:background="?attr/colorPrimary"
             android:navigationIcon="@drawable/ic_baseline_dehaze_24"
-            app:popupTheme="@style/Theme.BikeChow.PopupOverlay" />
+            app:popupTheme="@style/Theme.BikeChow.PopupOverlay">
+
+            <EditText
+                android:id="@+id/search_bar"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                />
+
+    </android.widget.Toolbar>
+
 
     </com.google.android.material.appbar.AppBarLayout>
 
