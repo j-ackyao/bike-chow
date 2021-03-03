@@ -11,28 +11,16 @@
         android:layout_height="wrap_content"
         android:theme="@style/Theme.BikeChow.AppBarOverlay">
 
-        <androidx.appcompat.widget.Toolbar
+        <android.widget.Toolbar
             android:id="@+id/toolbar"
             android:layout_width="match_parent"
             android:layout_height="?attr/actionBarSize"
             android:background="?attr/colorPrimary"
+            android:navigationIcon="@drawable/ic_baseline_dehaze_24"
             app:popupTheme="@style/Theme.BikeChow.PopupOverlay" />
 
     </com.google.android.material.appbar.AppBarLayout>
 
-    <FrameLayout
-        android:id="@+id/main_view"
-        android:layout_width="match_parent"
-        android:layout_height="match_parent"
-        >
-
-        <Button
-            android:id="@+id/button"
-            android:layout_width="411dp"
-            android:layout_height="222dp"
-            android:layout_gravity="left"
-            android:text="@string/app_name" />
-    </FrameLayout>
 
     <FrameLayout
         android:id="@+id/map_view"
@@ -43,6 +31,7 @@
     </FrameLayout>
 
     <include layout="@layout/content_main" />
+
 
     <com.google.android.material.floatingactionbutton.FloatingActionButton
         android:id="@+id/userPosReturn"

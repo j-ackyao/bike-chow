@@ -88,8 +88,6 @@ public class Draw {
         }
     }
 
-
-
     // Function for adding icons to map view with Icon Data (the preferred way)
     public MapIcon addIcon(IconData iconData) {
         MapIcon mapIcon = new MapIcon();
