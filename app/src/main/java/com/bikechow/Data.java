@@ -3,6 +3,8 @@ package com.bikechow;
 import android.Manifest;
 import android.graphics.Color;
 
+import androidx.annotation.NonNull;
+
 import com.microsoft.maps.Geopoint;
 import com.microsoft.maps.MapIcon;
 import com.microsoft.maps.MapImage;
@@ -77,7 +79,16 @@ class Route {
     public MapIcon iconIndex = null;
 
     public int elevationCost = -1;
-    public int changeValue = 0;
+
+    public double travelDistance;
+
+    public double getTravelDistance() {
+        return travelDistance;
+    }
+
+    public void setTravelDistance(double travelDistance) {
+        this.travelDistance = travelDistance;
+    }
 
     public int getElevationCost() {
         return elevationCost;
@@ -90,6 +101,26 @@ class Route {
     public Route(Geopoint[] points) {
         this.points = points;
         startingPoint = points[0];
-        startingPoint = points[points.length-1];
+        endingPoint = points[points.length-1];
     }
+
+    public Route(Route r) { // Copy constructor
+        this.points = r.points;
+        this.startingPoint = r.startingPoint;
+        this.endingPoint = r.endingPoint;
+        this.iconIndex = r.iconIndex;
+        this.elevationCost = r.elevationCost;
+        this.travelDistance = r.travelDistance;
+    }
+}
+
+class InterpolatedRoute extends Route {
+    Geopoint midpoint;
+
+    public InterpolatedRoute(Route r, Geopoint[] newRoute) {
+        super(r);
+        midpoint = r.points[r.points.length/2];
+        this.points = newRoute;
+    }
+
 }

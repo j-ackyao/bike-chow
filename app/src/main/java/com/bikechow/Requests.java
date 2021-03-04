@@ -85,7 +85,10 @@ public class Requests{
                 try {
                     JSONObject resources = b_getRouteResources(b_getRouteJSON(routeData), i);
                     Geopoint[] points = b_getRoutePoints(resources);
+                    double travelDistance = b_getTravelDistance(resources);
+
                     Route route = new Route(points);
+                    route.setTravelDistance(travelDistance);
                     retData.add(route);
 
                 } catch (JSONException e) {
@@ -201,6 +204,10 @@ public class Requests{
         JSONObject resourceSets = routeJSON.getJSONArray("resourceSets").getJSONObject(0);
 
         return resourceSets.getJSONArray("resources").getJSONObject(routeIndex);
+    }
+
+    private double b_getTravelDistance(JSONObject resources) throws JSONException {
+        return resources.getDouble("travelDistance");
     }
 
     private Geopoint[] b_getRoutePoints(JSONObject resources) throws JSONException {
