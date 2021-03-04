@@ -41,6 +41,10 @@ import com.microsoft.maps.OnMapTappedListener;
 import com.microsoft.maps.search.MapLocationAddress;
 
 import org.json.JSONException;
+import org.jsoup.Jsoup;
+import org.jsoup.nodes.Document;
+import org.jsoup.nodes.Element;
+import org.jsoup.select.Elements;
 
 import java.io.IOException;
 
@@ -68,6 +72,8 @@ public class MainActivity extends AppCompatActivity implements ActivityCompat.On
     public Geopoint cachedPoint;
     private boolean searched = false;
 
+    final String[] covidCase = new String[1];
+
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -92,6 +98,12 @@ public class MainActivity extends AppCompatActivity implements ActivityCompat.On
 
         initUser(); // Initiate user point
 
+        try {
+            Thread.sleep(2000);
+            alertUser("be careful, active bc covid: " + covidCase[0]);
+        } catch (InterruptedException e) {
+            e.printStackTrace();
+        }
     }
 
     private void initView() {
@@ -177,6 +189,22 @@ public class MainActivity extends AppCompatActivity implements ActivityCompat.On
 
 
         });
+
+        // webscraping
+        new Thread(new Runnable() {
+            @Override
+            public void run() {
+                final StringBuilder builder = new StringBuilder();
+                try {
+                    Document doc = Jsoup.connect("https://en.wikipedia.org/wiki/Template:COVID-19_pandemic_data/Canada_medical_cases_by_province").get();
+                    Elements td = doc.getElementsByTag("td");
+                    covidCase[0] = td.get(9).toString().replace("<td>", "").replace("</td>", "");
+                } catch (IOException e) {
+                    e.printStackTrace();
+                }
+            }
+        }).start();
+
 
         // add listener to our floating button to return view to user
         findViewById(R.id.userPosReturn).setOnClickListener(new View.OnClickListener(){
