@@ -6,6 +6,7 @@ import android.content.Context;
 import android.content.pm.PackageManager;
 import android.location.Location;
 import android.location.LocationManager;
+import android.os.Build;
 import android.os.Bundle;
 import android.view.Menu;
 import android.view.MenuItem;
@@ -15,6 +16,7 @@ import android.widget.Toast;
 import android.widget.Toolbar;
 
 import androidx.annotation.NonNull;
+import androidx.annotation.RequiresApi;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.core.app.ActivityCompat;
 import androidx.core.content.ContextCompat;
@@ -24,19 +26,16 @@ import androidx.drawerlayout.widget.DrawerLayout;
 import com.google.android.material.navigation.NavigationView;
 import com.microsoft.maps.Geopoint;
 import com.microsoft.maps.MapAnimationKind;
+import com.microsoft.maps.MapIcon;
 import com.microsoft.maps.MapImage;
 import com.microsoft.maps.MapRenderMode;
 import com.microsoft.maps.MapScene;
-import com.microsoft.maps.MapTappedEventArgs;
 import com.microsoft.maps.MapView;
-import com.microsoft.maps.OnMapTappedListener;
 import com.microsoft.maps.search.MapLocationAddress;
-
-import org.json.JSONException;
 
 import java.io.IOException;
 
-public class MainActivity extends AppCompatActivity implements ActivityCompat.OnRequestPermissionsResultCallback, OnMapTappedListener {
+public class MainActivity extends AppCompatActivity implements ActivityCompat.OnRequestPermissionsResultCallback {
     public MapView mMapView;
 
     private DrawerLayout drawerLayout;
@@ -50,6 +49,7 @@ public class MainActivity extends AppCompatActivity implements ActivityCompat.On
 
     public Requests requestCreator;
     private Draw draw;
+
     public IconData userData = new IconData();
 
     @Override
@@ -64,9 +64,6 @@ public class MainActivity extends AppCompatActivity implements ActivityCompat.On
         // initialize our visuals
         initView();
 
-        // Add our map tapped listener
-        mMapView.addOnMapTappedListener(this);
-
         // Create our requests class, which will handle GET and POST requests
         requestCreator = new Requests(this);
 
@@ -75,8 +72,6 @@ public class MainActivity extends AppCompatActivity implements ActivityCompat.On
 
         getLocationPermissions(); // Attempt to get our location permissions
 
-        // found it kinda annoying each time i booted the app it takes a second for me to find my own location, so i made this no transition
-        setScene(startLocation, Data.DEFAULT_FAR_RADIUS, MapAnimationKind.NONE);
         initUser(); // Initiate user point
     }
 
@@ -162,13 +157,14 @@ public class MainActivity extends AppCompatActivity implements ActivityCompat.On
             e.printStackTrace();
         }
         if(startLocation != null){
-            draw.addIcon(userData);
+            draw.replaceUserPoint(userData.location);
         }
     }
 
     // more to add here (hopefully)
     private void updateUser() {
         userData.location = getCurrentLocation();
+        draw.replaceUserPoint(userData.location);
     }
 
     // set view (moved to its own function for accessibility)
@@ -184,8 +180,6 @@ public class MainActivity extends AppCompatActivity implements ActivityCompat.On
 
         locationManager = (LocationManager) this.getSystemService(Context.LOCATION_SERVICE);
         startLocation = getCurrentLocation() == null ? startLocation : getCurrentLocation();
-
-        initUser(); // Initiate user point
     }
 
     // When the user rejects our request to access locations
@@ -195,10 +189,10 @@ public class MainActivity extends AppCompatActivity implements ActivityCompat.On
 
     @SuppressLint("MissingPermission")
     private Geopoint getCurrentLocation() {
-        Geopoint geopoint = startLocation;
+        Geopoint geopoint = null;
 
         if(!Data.locationPermsGranted) {
-            return geopoint;
+            return null;
         }
 
         Location l = locationManager.getLastKnownLocation(LocationManager.NETWORK_PROVIDER);
@@ -243,33 +237,5 @@ public class MainActivity extends AppCompatActivity implements ActivityCompat.On
                alertUser("Location permissions granted!");
             }
         }
-    }
-
-    /* When the user taps on the screen, we want a point to be generated with the address of the location.
-       Further implementation will include that it will append the location automatically to the text box for
-       destination.
-       We return false as we may still want other listeners to receive the event. */
-    @Override
-    public boolean onMapTapped(MapTappedEventArgs mapTappedEventArgs) {
-        Geopoint tapPoint = mapTappedEventArgs.location;
-        requestCreator.getAddress(tapPoint, request -> {
-            draw.replaceTapPoint(tapPoint, request);
-        });
-
-        draw.clearRoutes();
-
-        try {
-            requestCreator.getRoutesPoints(startLocation, tapPoint, 3, routes -> {
-                requestCreator.sortRoutesByElevationCost(routes, sortedRoutes -> {
-                    for(int i = 0; i < sortedRoutes.size(); i++) {
-                        draw.drawRouteInterpolated(sortedRoutes.get(i), Data.COLOR_SEQUENCE[i]);
-                    }
-                });
-
-            });
-        } catch (JSONException e) {
-            e.printStackTrace();
-        }
-        return false;
     }
 }

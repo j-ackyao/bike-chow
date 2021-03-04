@@ -6,10 +6,12 @@ import com.microsoft.maps.Geoposition;
 import com.microsoft.maps.MapElement;
 import com.microsoft.maps.MapElementLayer;
 import com.microsoft.maps.MapIcon;
+import com.microsoft.maps.MapImage;
 import com.microsoft.maps.MapPolyline;
 
 import org.json.JSONException;
 
+import java.io.IOException;
 import java.util.ArrayList;
 
 public class Draw {
@@ -108,9 +110,13 @@ public class Draw {
     }
 
     public void replaceUserPoint(Geopoint newPoint) {
-        iconLayer.getElements().remove(userIcon);
-        main.userData = new IconData(newPoint, "You");
-        userIcon = addIcon(main.userData);
+        try {
+            iconLayer.getElements().remove(userIcon);
+            main.userData = new IconData(newPoint, "You", new MapImage(main.getAssets().open("mrchow.png")));
+            userIcon = addIcon(main.userData);
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
     }
 
     public void clearRoutes() {

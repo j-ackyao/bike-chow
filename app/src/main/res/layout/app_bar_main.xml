@@ -13,7 +13,7 @@
 
         <android.widget.Toolbar
             android:id="@+id/toolbar"
-            android:layout_width="match_parent"
+            android:layout_width="340dp"
             android:layout_height="?attr/actionBarSize"
             android:background="?attr/colorPrimary"
             android:navigationIcon="@drawable/ic_baseline_dehaze_24"
@@ -24,6 +24,11 @@
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 />
+            <Button
+                android:layout_width="100dp"
+                android:layout_height="10dp">
+
+            </Button>
 
     </android.widget.Toolbar>
 
