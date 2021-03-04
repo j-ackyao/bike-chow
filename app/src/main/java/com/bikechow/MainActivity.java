@@ -8,6 +8,7 @@ import android.location.Location;
 import android.location.LocationManager;
 import android.os.Build;
 import android.os.Bundle;
+import android.os.Looper;
 import android.text.Editable;
 import android.text.TextWatcher;
 import android.view.KeyEvent;
@@ -97,13 +98,6 @@ public class MainActivity extends AppCompatActivity implements ActivityCompat.On
         getLocationPermissions(); // Attempt to get our location permissions
 
         initUser(); // Initiate user point
-
-        try {
-            Thread.sleep(2000);
-            alertUser("be careful, active bc covid: " + covidCase[0]);
-        } catch (InterruptedException e) {
-            e.printStackTrace();
-        }
     }
 
     private void initView() {
@@ -132,6 +126,7 @@ public class MainActivity extends AppCompatActivity implements ActivityCompat.On
 
             @Override
             public void onTextChanged(CharSequence s, int start, int before, int count) {
+                System.out.println("Text change detected!!!");
                 textModified = true;
                 searched = false;
             }
@@ -149,36 +144,10 @@ public class MainActivity extends AppCompatActivity implements ActivityCompat.On
 
                     if (!textModified) {
                         Geopoint target = draw.tapIcon.getLocation();
-                        try {
-                            requestCreator.getRoutesPoints(startLocation, target, 3, routes -> {
-                                requestCreator.sortRoutesByElevationCost(routes, sortedRoutes -> {
-                                    for (int i = 0; i < sortedRoutes.size(); i++) {
-                                        draw.drawRouteInterpolated(sortedRoutes.get(i), Data.COLOR_SEQUENCE[i]);
-                                    }
-
-                                    draw.replaceTapPoint(target, draw.tapIcon.getTitle());
-                                });
-
-                            });
-                        } catch (JSONException e) {
-                            e.printStackTrace();
-                        }
+                        draw(userData.location, target);
                     } else {
-                        requestCreator.getGeopoint(textBar.getText().toString(), target -> {
-                            try {
-                                requestCreator.getRoutesPoints(startLocation, target, 3, routes -> {
-                                    requestCreator.sortRoutesByElevationCost(routes, sortedRoutes -> {
-                                        for (int i = 0; i < sortedRoutes.size(); i++) {
-                                            draw.drawRouteInterpolated(sortedRoutes.get(i), Data.COLOR_SEQUENCE[i]);
-                                        }
-
-                                        draw.replaceTapPoint(target, String.format("Query: %s", textBar.getText().toString()));
-                                    });
-
-                                });
-                            } catch (JSONException e) {
-                                e.printStackTrace();
-                            }
+                        requestCreator.getGeopoint(textBar.getText().toString() + " BC, Canada", target -> {
+                            draw(userData.location, target);
                         });
                     }
 
@@ -191,20 +160,7 @@ public class MainActivity extends AppCompatActivity implements ActivityCompat.On
         });
 
         // webscraping
-        new Thread(new Runnable() {
-            @Override
-            public void run() {
-                final StringBuilder builder = new StringBuilder();
-                try {
-                    Document doc = Jsoup.connect("https://en.wikipedia.org/wiki/Template:COVID-19_pandemic_data/Canada_medical_cases_by_province").get();
-                    Elements td = doc.getElementsByTag("td");
-                    covidCase[0] = td.get(9).toString().replace("<td>", "").replace("</td>", "");
-                } catch (IOException e) {
-                    e.printStackTrace();
-                }
-            }
-        }).start();
-
+        new Thread(new WebscrapingThread(MainActivity.this)).start();
 
         // add listener to our floating button to return view to user
         findViewById(R.id.userPosReturn).setOnClickListener(new View.OnClickListener(){
@@ -252,6 +208,26 @@ public class MainActivity extends AppCompatActivity implements ActivityCompat.On
             return false;
         }
     };
+
+    void draw(Geopoint startPoint, Geopoint endPoint) {
+        try {
+            requestCreator.getRoutesPoints(startLocation, endPoint, 3, routes -> {
+                requestCreator.sortRoutesByElevationCost(routes, sortedRoutes -> {
+                    for (int i = 0; i < sortedRoutes.size(); i++) {
+                        draw.drawRouteInterpolated(sortedRoutes.get(i), Data.COLOR_SEQUENCE[i]);
+                    }
+                    draw.replaceTapPoint(endPoint, String.format("Query: %s", textBar.getText().toString()));
+                });
+            });
+        } catch (JSONException e) {
+            e.printStackTrace();
+        }
+
+        if(!Data.searchedOnce) {
+            Toast.makeText(this, String.format("Be careful! Active COVID-19 cases in BC: %s", covidCase[0]), Toast.LENGTH_LONG).show();
+            Data.searchedOnce = true;
+        }
+    }
 
     // this should make things neater or something
     void alertUser(String text){
@@ -373,10 +349,9 @@ public class MainActivity extends AppCompatActivity implements ActivityCompat.On
         requestCreator.getAddress(tapPoint, request -> {
             draw.replaceTapPoint(tapPoint, request);
             textBar.setText(request);
+            textModified = false;
+            searched = false;
         });
-
-        textModified = false;
-        searched = false;
 
         return false;
     }

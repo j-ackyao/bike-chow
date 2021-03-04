@@ -2,6 +2,8 @@ package com.bikechow;
 
 import android.Manifest;
 import android.graphics.Color;
+import android.os.Looper;
+import android.widget.Toast;
 
 import androidx.annotation.NonNull;
 
@@ -9,12 +11,19 @@ import com.microsoft.maps.Geopoint;
 import com.microsoft.maps.MapIcon;
 import com.microsoft.maps.MapImage;
 
+import org.jsoup.Jsoup;
+import org.jsoup.nodes.Document;
+import org.jsoup.select.Elements;
+
+import java.io.IOException;
+
 public class Data {
     // Permission related statics
     public static final String FINE_LOCATION = Manifest.permission.ACCESS_FINE_LOCATION;
     public static final String COARSE_LOCATION = Manifest.permission.ACCESS_COARSE_LOCATION;
     public static final int LOCATION_PERMISSION_REQUEST_CODE = 1234; // Permission code for location (doesn't really matter)
     public static boolean locationPermsGranted = false; // Bool to check if we have perms
+    public static boolean searchedOnce = false;
 
     // Navigation
     public static final int DEFAULT_FAR_RADIUS = 1500; // Zoom amount to default to // changed this to far radius because its kinda far
@@ -134,5 +143,30 @@ class InterpolatedRoute extends Route {
         midpoint = r.points[r.points.length/2];
         this.points = newRoute;
     }
+}
 
+class WebscrapingThread implements Runnable {
+
+//    RequestCallback rcb;
+    MainActivity main;
+
+    public WebscrapingThread(MainActivity main){
+//        this.rcb = rcb;
+        this.main = main;
+    }
+
+    @Override
+    public void run() {
+
+        final StringBuilder builder = new StringBuilder();
+        try {
+            Document doc = Jsoup.connect("https://en.wikipedia.org/wiki/Template:COVID-19_pandemic_data/Canada_medical_cases_by_province").get();
+            Elements td = doc.getElementsByTag("td");
+            String covidCase = td.get(9).toString().replace("<td>", "").replace("</td>", "");
+//            rcb.onCallback(covidCase);
+            main.covidCase[0] = covidCase;
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+    }
 }
