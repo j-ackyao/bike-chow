@@ -20,7 +20,7 @@ public class Draw {
     private final MapElementLayer iconLayer;
     private final MapElementLayer routeLayer;
     private final Requests requestCreator;
-    private MapIcon tapIcon = null;
+    public MapIcon tapIcon = null;
     private MapIcon userIcon = null;
 
     private final ArrayList<Route> storedRoutes = new ArrayList<Route>();
@@ -39,20 +39,6 @@ public class Draw {
     public void drawRoute(Route route, int color) {
         drawRoute(route.points, color);
 
-        // Add a point in the middle of the route
-        Geopoint middlePoint = route.points[route.points.length/2];
-        String iconText = "";
-
-//        System.out.println(String.format("Route Elevation Cost: %s", route.getElevationCost()));
-
-        if(route.getElevationCost() != -1) {
-            iconText = String.format("Elevation Cost: %s", route.getElevationCost()).toString();
-        }
-
-//        System.out.println("Entered Draw Route with a given route. Elevation cost is: " + route.elevationCost);
-
-        route.iconIndex = addIcon(new IconData(middlePoint, iconText));
-
         storedRoutes.add(route);
 
     }
@@ -62,9 +48,17 @@ public class Draw {
         requestCreator.getSnappedData(route.points, json -> {
             try {
                 Geopoint[] points = requestCreator.getSnappedPoints(json);
-                Route r = new Route(points);
-                r.setElevationCost(route.getElevationCost());
+                InterpolatedRoute r = new InterpolatedRoute(route, points);
                 drawRoute(r, color);
+
+                // Add a point in the middle of the route
+                String iconText = "";
+
+                if(route.getElevationCost() != -1) {
+                    iconText = String.format("Elevation Cost: %s, \nTravel Distance: %s", route.getElevationCost(), route.getTravelDistance()).toString();
+                }
+
+                r.iconIndex = addIcon(new IconData(r.midpoint, iconText));
             } catch (JSONException e) {
                 e.printStackTrace();
             }

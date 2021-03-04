@@ -8,10 +8,15 @@ import android.location.Location;
 import android.location.LocationManager;
 import android.os.Build;
 import android.os.Bundle;
+import android.text.Editable;
+import android.text.TextWatcher;
+import android.view.KeyEvent;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
+import android.widget.EditText;
 import android.widget.FrameLayout;
+import android.widget.TextView;
 import android.widget.Toast;
 import android.widget.Toolbar;
 
@@ -30,12 +35,16 @@ import com.microsoft.maps.MapIcon;
 import com.microsoft.maps.MapImage;
 import com.microsoft.maps.MapRenderMode;
 import com.microsoft.maps.MapScene;
+import com.microsoft.maps.MapTappedEventArgs;
 import com.microsoft.maps.MapView;
+import com.microsoft.maps.OnMapTappedListener;
 import com.microsoft.maps.search.MapLocationAddress;
+
+import org.json.JSONException;
 
 import java.io.IOException;
 
-public class MainActivity extends AppCompatActivity implements ActivityCompat.OnRequestPermissionsResultCallback {
+public class MainActivity extends AppCompatActivity implements ActivityCompat.OnRequestPermissionsResultCallback, OnMapTappedListener {
     public MapView mMapView;
 
     private DrawerLayout drawerLayout;
@@ -51,6 +60,14 @@ public class MainActivity extends AppCompatActivity implements ActivityCompat.On
     private Draw draw;
 
     public IconData userData = new IconData();
+
+
+    // Text box related stuff
+    private EditText textBar;
+    public boolean textModified;
+    public Geopoint cachedPoint;
+    private boolean searched = false;
+
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -93,6 +110,72 @@ public class MainActivity extends AppCompatActivity implements ActivityCompat.On
             }
         });
 
+        textBar = findViewById(R.id.search_bar);
+        textBar.addTextChangedListener(new TextWatcher() {
+            @Override
+            public void beforeTextChanged(CharSequence s, int start, int count, int after) {
+            }
+
+            @Override
+            public void onTextChanged(CharSequence s, int start, int before, int count) {
+                textModified = true;
+                searched = false;
+            }
+
+            @Override
+            public void afterTextChanged(Editable s) {
+            }
+        });
+        textBar.setOnEditorActionListener(new TextView.OnEditorActionListener() {
+            @Override
+            public boolean onEditorAction(TextView v, int actionId, KeyEvent event) {
+                if (event.getKeyCode() == KeyEvent.KEYCODE_ENTER && !searched) { // Searched boolean is necessary, as onEditorAction is called when the button is down AND up. This effectively calls it twice, which is not the desired behaviour.
+                    searched = true;
+                    draw.clearRoutes();
+
+                    if (!textModified) {
+                        Geopoint target = draw.tapIcon.getLocation();
+                        try {
+                            requestCreator.getRoutesPoints(startLocation, target, 3, routes -> {
+                                requestCreator.sortRoutesByElevationCost(routes, sortedRoutes -> {
+                                    for (int i = 0; i < sortedRoutes.size(); i++) {
+                                        draw.drawRouteInterpolated(sortedRoutes.get(i), Data.COLOR_SEQUENCE[i]);
+                                    }
+
+                                    draw.replaceTapPoint(target, draw.tapIcon.getTitle());
+                                });
+
+                            });
+                        } catch (JSONException e) {
+                            e.printStackTrace();
+                        }
+                    } else {
+                        requestCreator.getGeopoint(textBar.getText().toString(), target -> {
+                            try {
+                                requestCreator.getRoutesPoints(startLocation, target, 3, routes -> {
+                                    requestCreator.sortRoutesByElevationCost(routes, sortedRoutes -> {
+                                        for (int i = 0; i < sortedRoutes.size(); i++) {
+                                            draw.drawRouteInterpolated(sortedRoutes.get(i), Data.COLOR_SEQUENCE[i]);
+                                        }
+
+                                        draw.replaceTapPoint(target, String.format("Query: %s", textBar.getText().toString()));
+                                    });
+
+                                });
+                            } catch (JSONException e) {
+                                e.printStackTrace();
+                            }
+                        });
+                    }
+
+                }
+
+                return true;
+            }
+
+
+        });
+
         // add listener to our floating button to return view to user
         findViewById(R.id.userPosReturn).setOnClickListener(new View.OnClickListener(){
             @Override
@@ -124,13 +207,11 @@ public class MainActivity extends AppCompatActivity implements ActivityCompat.On
 
             switch (item.getItemId()) {
                 case R.id.nav_map:
-
                     // close navigation drawer
                     drawerLayout.closeDrawer(GravityCompat.START);
                     return true;
 
                 case R.id.nav_directions:
-
                     return true;
 
                 case R.id.nav_blank:
@@ -163,6 +244,10 @@ public class MainActivity extends AppCompatActivity implements ActivityCompat.On
 
     // more to add here (hopefully)
     private void updateUser() {
+        if(!Data.locationPermsGranted) {
+            alertUser("You have not granted the app location permissions.");
+            return;
+        }
         userData.location = getCurrentLocation();
         draw.replaceUserPoint(userData.location);
     }
@@ -199,6 +284,15 @@ public class MainActivity extends AppCompatActivity implements ActivityCompat.On
 
         if(l != null) {
             geopoint = new Geopoint(l.getLatitude(), l.getLongitude());
+        } else {
+            l = locationManager.getLastKnownLocation(LocationManager.GPS_PROVIDER);
+
+            if(l == null) {
+                alertUser("Unable to get your current location. Are your location services disabled? Or are you offline?");
+            }
+            else {
+                geopoint = new Geopoint(l.getLatitude(), l.getLongitude());
+            }
         }
 
         return geopoint;
@@ -237,5 +331,23 @@ public class MainActivity extends AppCompatActivity implements ActivityCompat.On
                alertUser("Location permissions granted!");
             }
         }
+    }
+
+    /* When the user taps on the screen, we want a point to be generated with the address of the location.
+       Further implementation will include that it will append the location automatically to the text box for
+       destination.
+       We return false as we may still want other listeners to receive the event. */
+    @Override
+    public boolean onMapTapped(MapTappedEventArgs mapTappedEventArgs) {
+        Geopoint tapPoint = mapTappedEventArgs.location;
+        requestCreator.getAddress(tapPoint, request -> {
+            draw.replaceTapPoint(tapPoint, request);
+            textBar.setText(request);
+        });
+
+        textModified = false;
+        searched = false;
+
+        return false;
     }
 }
