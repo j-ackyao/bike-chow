@@ -5,6 +5,7 @@ import com.android.volley.RequestQueue;
 import com.android.volley.toolbox.StringRequest;
 import com.android.volley.toolbox.Volley;
 import com.microsoft.maps.Geopoint;
+import com.microsoft.maps.Geoposition;
 import com.microsoft.maps.search.MapLocation;
 import com.microsoft.maps.search.MapLocationFinder;
 import com.microsoft.maps.search.MapLocationFinderStatus;
@@ -283,16 +284,29 @@ public class Requests{
 
     public void setRouteElevation(Route r, Callback finished) { // Assign the route elevation of a route
         getElevations(r, elevations -> {
-            int maximum = 0;
-            for(int i = 0; i < elevations.size(); i++) {
-                int[] intArray = elevations.get(i);
-                int change = Math.abs(intArray[1] - intArray[0]);
+            double squared = 0;
+            double[] distances = new double[elevations.size()];
 
-                if(maximum < change) {
-                    maximum = change;
-                }
+            for(int i = 0; i < elevations.size(); i++){
+                Geoposition point1 = r.points[i].getPosition();
+                Geoposition point2 = r.points[i+1].getPosition();
+
+                double latitude1 = point1.getLatitude();
+                double longitude1 = point1.getLongitude();
+
+                double latitude2 = point2.getLatitude();
+                double longitude2 = point2.getLongitude();
+
+                distances[i] = Data.distanceBetweenCoordinates(latitude1, longitude1, latitude2, longitude2);
             }
-            r.setElevationCost(maximum);
+
+            for(int i = 0; i < elevations.size(); i++) {
+                int[] pairedPoints = elevations.get(i);
+                double change = Math.abs((pairedPoints[1] - pairedPoints[0])/distances[i]);
+
+                squared += Math.pow(change, 2);
+            }
+            r.setElevationCost((int) squared);
             finished.onCallback();
         });
     }

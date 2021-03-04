@@ -76,6 +76,7 @@ public class MainActivity extends AppCompatActivity implements ActivityCompat.On
         mMapView = new MapView(this, MapRenderMode.VECTOR);  // or use MapRenderMode.RASTER for 2D map
         mMapView.setCredentialsKey(BuildConfig.CREDENTIALS_KEY);  //
         ((FrameLayout) findViewById(R.id.map_view)).addView(mMapView);
+        mMapView.addOnMapTappedListener(this);
         mMapView.onCreate(savedInstanceState);
 
         // initialize our visuals
@@ -90,6 +91,7 @@ public class MainActivity extends AppCompatActivity implements ActivityCompat.On
         getLocationPermissions(); // Attempt to get our location permissions
 
         initUser(); // Initiate user point
+
     }
 
     private void initView() {

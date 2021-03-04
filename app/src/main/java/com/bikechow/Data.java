@@ -40,6 +40,18 @@ public class Data {
         return String.format("%s,%s", g.getPosition().getLatitude(), g.getPosition().getLongitude());
     }
 
+    public static double distanceBetweenCoordinates(double lat1, double long1, double lat2, double long2){
+        double earthRadius = 6371;
+        lat1 = lat1 * Math.PI / 180;
+        lat2 = lat2 * Math.PI / 180;
+        long1 = long1 * Math.PI / 180;
+        long2 = long2 * Math.PI / 180;
+
+        double a = Math.pow(Math.sin((lat2-lat1)/2), 2) + Math.cos(lat1) * Math.cos(lat2) * Math.pow(Math.sin((long2-long1)/2), 2);
+        double b = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+        return earthRadius * b;
+    }
+
 }
 
 // A class for storing icon data. This is for default parameters.

@@ -55,7 +55,7 @@ public class Draw {
                 String iconText = "";
 
                 if(route.getElevationCost() != -1) {
-                    iconText = String.format("Elevation Cost: %s, \nTravel Distance: %s", route.getElevationCost(), route.getTravelDistance()).toString();
+                    iconText = String.format("Elevation Cost: %s, \nTravel Distance: %s km", route.getElevationCost(), route.getTravelDistance()).toString();
                 }
 
                 r.iconIndex = addIcon(new IconData(r.midpoint, iconText));
