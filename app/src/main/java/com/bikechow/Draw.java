@@ -3,7 +3,6 @@ package com.bikechow;
 import com.microsoft.maps.Geopath;
 import com.microsoft.maps.Geopoint;
 import com.microsoft.maps.Geoposition;
-import com.microsoft.maps.MapElement;
 import com.microsoft.maps.MapElementLayer;
 import com.microsoft.maps.MapIcon;
 import com.microsoft.maps.MapImage;
@@ -15,15 +14,16 @@ import java.io.IOException;
 import java.util.ArrayList;
 
 public class Draw {
-    public MainActivity main;
+    public MainActivity main; // Reference to MainActivity
 
-    private final MapElementLayer iconLayer;
-    private final MapElementLayer routeLayer;
-    private final Requests requestCreator;
-    public MapIcon tapIcon = null;
-    private MapIcon userIcon = null;
+    private final MapElementLayer iconLayer; // Layer for drawing icons on (on top of the map and route layer)
+    private final MapElementLayer routeLayer; // Layer for drawing routes on (below the icon layer)
+    private final Requests requestCreator; // Easy access to MainActivity requestCreator
 
-    private final ArrayList<Route> storedRoutes = new ArrayList<Route>();
+    public MapIcon tapIcon = null; // Icon that represents the user's tap position
+    private MapIcon userIcon = null; // Icon that represent's the user's specified/current location
+
+    private final ArrayList<Route> storedRoutes = new ArrayList<Route>(); // A list of routes for later clearing
 
     public Draw(MainActivity main) {
         this.main = main;
@@ -38,9 +38,7 @@ public class Draw {
     // Function for drawing routes, given a route object
     public void drawRoute(Route route, int color) {
         drawRoute(route.points, color);
-
-        storedRoutes.add(route);
-
+        storedRoutes.add(route); // We want to store the routes so we can later clear all of them when a new one is requested
     }
 
     // Function for drawing a route cleanly, give a route object
@@ -56,7 +54,7 @@ public class Draw {
 
                 if(route.getElevationCost() != -1) {
                     iconText = String.format("Elevation Cost: %s, \nTravel Distance: %s km", route.getElevationCost(), route.getTravelDistance()).toString();
-                }
+                } // Honestly can't think of an amazing way to handle this.
 
                 r.iconIndex = addIcon(new IconData(r.midpoint, iconText));
             } catch (JSONException e) {

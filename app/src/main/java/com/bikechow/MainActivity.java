@@ -6,9 +6,7 @@ import android.content.Context;
 import android.content.pm.PackageManager;
 import android.location.Location;
 import android.location.LocationManager;
-import android.os.Build;
 import android.os.Bundle;
-import android.os.Looper;
 import android.text.Editable;
 import android.text.TextWatcher;
 import android.view.KeyEvent;
@@ -22,34 +20,33 @@ import android.widget.Toast;
 import android.widget.Toolbar;
 
 import androidx.annotation.NonNull;
-import androidx.annotation.RequiresApi;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.core.app.ActivityCompat;
 import androidx.core.content.ContextCompat;
 import androidx.core.view.GravityCompat;
 import androidx.drawerlayout.widget.DrawerLayout;
 
+import com.google.android.material.floatingactionbutton.FloatingActionButton;
 import com.google.android.material.navigation.NavigationView;
 import com.microsoft.maps.Geopoint;
 import com.microsoft.maps.MapAnimationKind;
+import com.microsoft.maps.MapDoubleTappedEventArgs;
 import com.microsoft.maps.MapIcon;
 import com.microsoft.maps.MapImage;
 import com.microsoft.maps.MapRenderMode;
 import com.microsoft.maps.MapScene;
 import com.microsoft.maps.MapTappedEventArgs;
 import com.microsoft.maps.MapView;
+import com.microsoft.maps.OnMapDoubleTappedListener;
 import com.microsoft.maps.OnMapTappedListener;
-import com.microsoft.maps.search.MapLocationAddress;
 
 import org.json.JSONException;
-import org.jsoup.Jsoup;
-import org.jsoup.nodes.Document;
-import org.jsoup.nodes.Element;
-import org.jsoup.select.Elements;
 
 import java.io.IOException;
+import java.util.ArrayList;
+import java.util.Arrays;
 
-public class MainActivity extends AppCompatActivity implements ActivityCompat.OnRequestPermissionsResultCallback, OnMapTappedListener {
+public class MainActivity extends AppCompatActivity implements ActivityCompat.OnRequestPermissionsResultCallback, OnMapTappedListener, OnMapDoubleTappedListener {
     public MapView mMapView;
 
     private DrawerLayout drawerLayout;
@@ -58,7 +55,6 @@ public class MainActivity extends AppCompatActivity implements ActivityCompat.On
     private Toolbar toolbar;
 
     private LocationManager locationManager;
-    private MapLocationAddress mapLocationAddress;
     private Geopoint startLocation = Data.RICHMOND;
 
     public Requests requestCreator;
@@ -66,14 +62,11 @@ public class MainActivity extends AppCompatActivity implements ActivityCompat.On
 
     public IconData userData = new IconData();
 
-
     // Text box related stuff
     private EditText textBar;
     public boolean textModified;
-    public Geopoint cachedPoint;
-    private boolean searched = false;
 
-    final String[] covidCase = new String[1];
+    String covidCase = "";
 
 
     @Override
@@ -84,6 +77,7 @@ public class MainActivity extends AppCompatActivity implements ActivityCompat.On
         mMapView.setCredentialsKey(BuildConfig.CREDENTIALS_KEY);  //
         ((FrameLayout) findViewById(R.id.map_view)).addView(mMapView);
         mMapView.addOnMapTappedListener(this);
+        mMapView.addOnMapDoubleTappedListener(this);
         mMapView.onCreate(savedInstanceState);
 
         // initialize our visuals
@@ -102,10 +96,12 @@ public class MainActivity extends AppCompatActivity implements ActivityCompat.On
 
     private void initView() {
 
+        // Grab reference to components
         drawerLayout = findViewById(R.id.drawer_layout);
         navigationView = findViewById(R.id.nav_view);
         navigationMenu = navigationView.getMenu();
         toolbar = findViewById(R.id.toolbar);
+        FloatingActionButton searchButton = findViewById(R.id.searchButton);
 
         // add listener to our navigation drawer to detect item selected
         navigationView.setNavigationItemSelectedListener(navigationListener);
@@ -121,54 +117,43 @@ public class MainActivity extends AppCompatActivity implements ActivityCompat.On
         textBar = findViewById(R.id.search_bar);
         textBar.addTextChangedListener(new TextWatcher() {
             @Override
-            public void beforeTextChanged(CharSequence s, int start, int count, int after) {
-            }
+            public void beforeTextChanged(CharSequence s, int start, int count, int after) { }
 
             @Override
             public void onTextChanged(CharSequence s, int start, int before, int count) {
-                System.out.println("Text change detected!!!");
                 textModified = true;
-                searched = false;
             }
 
             @Override
-            public void afterTextChanged(Editable s) {
-            }
-        });
-        textBar.setOnEditorActionListener(new TextView.OnEditorActionListener() {
-            @Override
-            public boolean onEditorAction(TextView v, int actionId, KeyEvent event) {
-                if (event.getKeyCode() == KeyEvent.KEYCODE_ENTER && !searched) { // Searched boolean is necessary, as onEditorAction is called when the button is down AND up. This effectively calls it twice, which is not the desired behaviour.
-                    searched = true;
-                    draw.clearRoutes();
-
-                    if (!textModified) {
-                        Geopoint target = draw.tapIcon.getLocation();
-                        draw(userData.location, target);
-                    } else {
-                        requestCreator.getGeopoint(textBar.getText().toString() + " BC, Canada", target -> {
-                            draw(userData.location, target);
-                        });
-                    }
-
-                }
-
-                return true;
-            }
-
-
+            public void afterTextChanged(Editable s) { }
         });
 
-        // webscraping
+        // Handle the user pressing the search button
+        searchButton.setOnClickListener(v -> {
+            draw.clearRoutes();
+
+            if(textBar.getText().toString().isEmpty()) {
+                alertUser("No route specified! Please tap on a location on the map, or manually enter one with the search bar.");
+                return;
+            }
+
+            if (!textModified) {
+                Geopoint target = draw.tapIcon.getLocation();
+                draw(userData.location, target);
+            } else {
+                requestCreator.getGeopoint(textBar.getText().toString() + " BC, Canada", target -> {
+                    draw(userData.location, target);
+                });
+            }
+        });
+
+        // Basic webscraping thread to get COVID-19 data.
         new Thread(new WebscrapingThread(MainActivity.this)).start();
 
         // add listener to our floating button to return view to user
-        findViewById(R.id.userPosReturn).setOnClickListener(new View.OnClickListener(){
-            @Override
-            public void onClick(View v) {
-                updateUser();
-                setScene(getCurrentLocation(), Data.DEFAULT_CLOSE_RADIUS, MapAnimationKind.BOW);
-            }
+        findViewById(R.id.userPosReturn).setOnClickListener(v -> {
+            updateUser();
+            setScene(getCurrentLocation(), Data.DEFAULT_CLOSE_RADIUS, MapAnimationKind.BOW);
         });
 
         // maps in navigation drawer enabled on default
@@ -179,8 +164,6 @@ public class MainActivity extends AppCompatActivity implements ActivityCompat.On
         mMapView.getUserInterfaceOptions().setZoomButtonsVisible(false);
         mMapView.getUserInterfaceOptions().setCompassButtonVisible(false);
         mMapView.getUserInterfaceOptions().setTiltButtonVisible(false);
-
-
     }
 
     // do whatever when an item on navigation drawer is pressed
@@ -211,7 +194,7 @@ public class MainActivity extends AppCompatActivity implements ActivityCompat.On
 
     void draw(Geopoint startPoint, Geopoint endPoint) {
         try {
-            requestCreator.getRoutesPoints(startLocation, endPoint, 3, routes -> {
+            requestCreator.getRoutesPoints(startPoint, endPoint, 3, routes -> {
                 requestCreator.sortRoutesByElevationCost(routes, sortedRoutes -> {
                     for (int i = 0; i < sortedRoutes.size(); i++) {
                         draw.drawRouteInterpolated(sortedRoutes.get(i), Data.COLOR_SEQUENCE[i]);
@@ -224,7 +207,7 @@ public class MainActivity extends AppCompatActivity implements ActivityCompat.On
         }
 
         if(!Data.searchedOnce) {
-            Toast.makeText(this, String.format("Be careful! Active COVID-19 cases in BC: %s", covidCase[0]), Toast.LENGTH_LONG).show();
+            Toast.makeText(this, String.format("Be careful! Active COVID-19 cases in BC: %s", covidCase), Toast.LENGTH_LONG).show();
             Data.searchedOnce = true;
         }
     }
@@ -246,6 +229,11 @@ public class MainActivity extends AppCompatActivity implements ActivityCompat.On
         if(startLocation != null){
             draw.replaceUserPoint(userData.location);
         }
+    }
+
+    private void moveUser(Geopoint newPoint) {
+        userData.location = newPoint;
+        draw.replaceUserPoint(newPoint);
     }
 
     // more to add here (hopefully)
@@ -282,36 +270,34 @@ public class MainActivity extends AppCompatActivity implements ActivityCompat.On
     private Geopoint getCurrentLocation() {
         Geopoint geopoint = null;
 
-        if(!Data.locationPermsGranted) {
+        if(!Data.locationPermsGranted) { // Safety check to ensure that we have permission to fetch the location of the user
+            alertUser("You have not granted this app location permissions.");
             return null;
         }
 
-        Location l = locationManager.getLastKnownLocation(LocationManager.NETWORK_PROVIDER);
+        Location l = locationManager.getLastKnownLocation(LocationManager.NETWORK_PROVIDER) != null ?
+                locationManager.getLastKnownLocation(LocationManager.NETWORK_PROVIDER) : // We'll first try using the Network Provider to get location
+                locationManager.getLastKnownLocation(LocationManager.GPS_PROVIDER); // And if that doesn't work try GPS provider
 
         if(l != null) {
             geopoint = new Geopoint(l.getLatitude(), l.getLongitude());
         } else {
-            l = locationManager.getLastKnownLocation(LocationManager.GPS_PROVIDER);
-
-            if(l == null) {
-                alertUser("Unable to get your current location. Are your location services disabled? Or are you offline?");
-            }
-            else {
-                geopoint = new Geopoint(l.getLatitude(), l.getLongitude());
-            }
+            alertUser("We couldn't get your location! Are you offline?");
         }
 
         return geopoint;
     }
 
-    // Attempt to fetch location perms
+   /*
+   This is our request method for asking the user to grant this app location permissions.
+    */
     private void getLocationPermissions() {
-        String[] permissions = {Manifest.permission.ACCESS_FINE_LOCATION, Manifest.permission.ACCESS_COARSE_LOCATION};
+        String[] permissions = {Manifest.permission.ACCESS_FINE_LOCATION, Manifest.permission.ACCESS_COARSE_LOCATION}; // Required permissions
 
         boolean a = (ContextCompat.checkSelfPermission(getApplicationContext(), Data.FINE_LOCATION) == PackageManager.PERMISSION_GRANTED);
         boolean b = (ContextCompat.checkSelfPermission(getApplicationContext(), Data.COARSE_LOCATION) == PackageManager.PERMISSION_GRANTED);
 
-        Data.locationPermsGranted = (a && b);
+        Data.locationPermsGranted = (a && b); // We need both permissions to work!! (Actually double check this)
 
         if (!Data.locationPermsGranted) {
             ActivityCompat.requestPermissions(this, permissions, Data.LOCATION_PERMISSION_REQUEST_CODE);
@@ -320,7 +306,10 @@ public class MainActivity extends AppCompatActivity implements ActivityCompat.On
         }
     }
 
-
+    /*
+    We'll call this function when the user decides whether to grant the user permissions.
+    We use this function to decide whether to call onLocationPermsAccepted or onLocationPermsDenied.
+     */
     @Override
     public void onRequestPermissionsResult(int requestCode, @NonNull String[] permissions, @NonNull int[] grantResults) {
         Data.locationPermsGranted = false;
@@ -339,6 +328,10 @@ public class MainActivity extends AppCompatActivity implements ActivityCompat.On
         }
     }
 
+    private final ArrayList<Geopoint> cachedTapPoint = new ArrayList<>(); // A tap point to store to fall back to if onMapDoubleTapped is picked up.
+    private final ArrayList<String> cachedTextTapPoint = new ArrayList<>(); // String to fall back to (so we don't use excess bandwidth)
+
+
     /* When the user taps on the screen, we want a point to be generated with the address of the location.
        Further implementation will include that it will append the location automatically to the text box for
        destination.
@@ -350,9 +343,37 @@ public class MainActivity extends AppCompatActivity implements ActivityCompat.On
             draw.replaceTapPoint(tapPoint, request);
             textBar.setText(request);
             textModified = false;
-            searched = false;
-        });
 
+            cachedTapPoint.add(tapPoint);
+            cachedTextTapPoint.add(request);
+        });
         return false;
+    }
+
+    /*
+    When the user double taps on the screen, we want to relocate the user's position.
+    We return false as we may still want other listeners to receive the event.
+    Unfortunately the double tap function is still linked to onMapTapped (probably implemented the same way),
+    so when the user wants to move the user it also changes the position of their destination (the tap point).
+     */
+    @Override
+    public boolean onMapDoubleTapped(MapDoubleTappedEventArgs mapDoubleTappedEventArgs) {
+        Geopoint tapPoint = mapDoubleTappedEventArgs.location;
+        moveUser(tapPoint);
+
+        if(cachedTapPoint.size() < 2 || cachedTextTapPoint.size() < 2) return true;
+
+        String restoreString = cachedTextTapPoint.get(cachedTextTapPoint.size()-2);
+        Geopoint restorePoint = cachedTapPoint.get(cachedTapPoint.size()-2);
+
+        // As we picked up the double tap event, we need to restore the position of the original tap point.
+        draw.replaceTapPoint(cachedTapPoint.get(cachedTapPoint.size()-2), cachedTextTapPoint.get(cachedTextTapPoint.size()-2));
+        textBar.setText(textModified ? textBar.getText().toString() : cachedTextTapPoint.get(cachedTextTapPoint.size()-2));
+
+        // We just want to keep the point and text we fell back to.
+        cachedTapPoint.clear(); cachedTapPoint.add(restorePoint);
+        cachedTextTapPoint.clear(); cachedTextTapPoint.add(restoreString);
+
+        return true;
     }
 }

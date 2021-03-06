@@ -2,11 +2,13 @@
   <dictionary name="sammy">
     <words>
       <w>arraylist</w>
+      <w>covid</w>
       <w>geopoint</w>
       <w>geopoints</w>
       <w>unparsed</w>
       <w>waypoint</w>
       <w>waypoints</w>
+      <w>webscraping</w>
     </words>
   </dictionary>
 </component>

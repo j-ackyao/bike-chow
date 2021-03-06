@@ -22,11 +22,12 @@
             <EditText
                 android:id="@+id/search_bar"
                 android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                />
+                android:imeOptions="actionSearch"
+                android:layout_height="wrap_content" />
 
 
-    </android.widget.Toolbar>
+
+        </android.widget.Toolbar>
 
 
     </com.google.android.material.appbar.AppBarLayout>
@@ -50,5 +51,14 @@
         android:layout_gravity="bottom|end"
         android:layout_margin="@dimen/fab_margin"
         app:srcCompat="@android:drawable/ic_dialog_map" />
+
+    <com.google.android.material.floatingactionbutton.FloatingActionButton
+        android:id="@+id/searchButton"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_gravity="bottom|end"
+        android:layout_margin="@dimen/fab_margin"
+        android:translationY="-130px"
+        app:srcCompat="@drawable/ic_bike_foreground" />
 
 </androidx.coordinatorlayout.widget.CoordinatorLayout>

@@ -146,25 +146,18 @@ class InterpolatedRoute extends Route {
 }
 
 class WebscrapingThread implements Runnable {
-
-//    RequestCallback rcb;
     MainActivity main;
 
     public WebscrapingThread(MainActivity main){
-//        this.rcb = rcb;
         this.main = main;
     }
 
     @Override
     public void run() {
-
-        final StringBuilder builder = new StringBuilder();
         try {
             Document doc = Jsoup.connect("https://en.wikipedia.org/wiki/Template:COVID-19_pandemic_data/Canada_medical_cases_by_province").get();
             Elements td = doc.getElementsByTag("td");
-            String covidCase = td.get(9).toString().replace("<td>", "").replace("</td>", "");
-//            rcb.onCallback(covidCase);
-            main.covidCase[0] = covidCase;
+            main.covidCase = td.get(9).toString().replace("<td>", "").replace("</td>", "");
         } catch (IOException e) {
             e.printStackTrace();
         }

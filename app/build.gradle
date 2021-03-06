@@ -23,7 +23,7 @@ android {
             proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
         }
         buildTypes.each {
-            it.buildConfigField "String", "CREDENTIALS_KEY", "\"Aibv2h_ydIa8eDaAqyNeZ91zy8zPEjqltZzrUp6jf3JAR8G8tgPvz0JIBtd9L2De\""
+            it.buildConfigField "String", "CREDENTIALS_KEY", "\"AvdRQZ_TKHfnl6NhFArhhD_9EcTIZ5xaxLpHGVd_Do-OBUKsNvOaXeJG46a-JaPu\""
         }
     }
     compileOptions {
