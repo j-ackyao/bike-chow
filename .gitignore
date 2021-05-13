@@ -16,4 +16,3 @@ local.properties
 
 /app/build
 /app/secrets.gradle
-/app/ignore.gradle
